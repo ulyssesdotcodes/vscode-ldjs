@@ -39,13 +39,13 @@
     },
     "devDependencies": {
         "typescript": "^3.1.6",
-        "vscode": "^1.1.21",
+        "vscode": "^1.1.22",
         "@types/node": "^8.10.25",
         "@types/mocha": "^2.2.42"
     },
     "dependencies": {
         "fp-ts": "^1.11.2",
-        "lambdadesignerjs": "file:../LambdaDesignerJS",
+        "lambdadesignerjs": "file:../lambdadesignerjs",
         "net": "^1.0.2"
     }
 }
