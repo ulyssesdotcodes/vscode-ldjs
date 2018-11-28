@@ -28,7 +28,23 @@
                 "command": "extension.ldjsclearrequire",
                 "title": "LDJS: Clear require cache"
             }
-        ]
+        ],
+        "configuration": {
+            "type": "object",
+            "title": "LDJS configuration",
+            "properties": {
+                "ldjs.server_url": {
+                    "type": "string",
+                    "default": "127.0.0.1",
+                    "description": "IP address of TouchDesigner"
+                },
+                "ldjs.server_port": {
+                    "type": "integer",
+                    "default": 5959,
+                    "description": "Port of TouchDesigner TCP server"
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

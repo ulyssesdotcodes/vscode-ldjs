@@ -10,12 +10,14 @@ import { networkInterfaces } from 'os';
 import { option } from 'fp-ts/lib/Option';
 import { fstat } from 'fs';
 
+let config = vscode.workspace.getConfiguration('ldjs')
+
 let replcache = []
 
 
 class Socket {
-	readonly SERVER_URL = "127.0.0.1";
-	readonly SERVER_PORT = 5959;
+	readonly SERVER_URL = config.get<string>('server_url');
+	readonly SERVER_PORT = config.get<number>('server_port');
 	timeout: number = 1000;
 	socket: net.Socket;
 	connected: boolean = false;
@@ -42,7 +44,7 @@ class Socket {
 	}
 
 	makeConnection() {
-		this.socket.connect(this.SERVER_PORT, this.SERVER_URL);
+		this.socket.connect(config.get<number>('server_port'), config.get<string>('server_url'));
 	}
 
 	send(message: string) {
@@ -76,8 +78,9 @@ class LDJSBridge {
 
     run(obj) {
         return Function("return (function(c, v, require) { return v((function() { " + obj + " })())})")()(ldjs, (n) => ldjs.validateNode(n).map(n => ldjs.nodeToJSON(n)), (v) => {
-            let path = vscode.workspace.rootPath + "\\" + v;
-            if(!(path in replcache)) {
+            let docuri = vscode.window.activeTextEditor.document.uri.path
+            let path = docuri.substr(0, docuri.lastIndexOf('/') + 1) + v
+            if(replcache.indexOf(path) == -1) {
                 replcache.push(path);
             }
             return require(path);
@@ -136,7 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
             bridge.update()
         }
     })
-
+    
     context.subscriptions.push(start);
     context.subscriptions.push(end);
 }
