@@ -5,6 +5,18 @@ function zip(arrs) {
     })
 }
 
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+let hexcolor = (h) => hexToRgb(h)
+let rgb = (r, g, b) => ({ r: r, g: g, b: b })
+
 const visuals = (c) => ({
     ain: (g) => c.chope("audiodevicein")
         .connect(c.chop("resample", {"timeslice": c.tp(false), "method": c.mp(0), "relative": c.mp(0), "end": c.fp(0.03)}))
@@ -12,7 +24,7 @@ const visuals = (c) => ({
     aine: () => visuals(c).ain(1),
     atex: () => c.top("chopto", {"chop": c.chopp(visuals(c).aine())}),
     aspect: () => c.chope('audiodevicein').connect(c.chope('audiospectrum', {})),
-    aspecttex: () => c.top("chopto", {"chop": c.chopp(visuals(c).aspect())}),
+    aspecttex: () => c.top("chopto", {"chop": c.chopp(visuals(c).aspect().out())}),
     analyze: (i) => c.chop('analyze', {"function": c.mp(i)}),
     vol: () => visuals(c).aine().connect(visuals(c).analyze(6)),
     volc: () => c.chan(c.ip(0), visuals(c).vol()),
@@ -54,9 +66,45 @@ const visuals = (c) => ({
         "alignx": c.mp(0),
         "aligny": c.mp(0),
         "text": c.sp(text)
-    })
-
-
+    }),
+    crosshatch: () => visuals(c).frag("crosshatch.frag", {}),
+    flowermod: (s) => visuals(c).frag("flower_mod.frag", {"uSeconds": c.x4p(s)}),
+    lumidots: () => visuals(c).frag("lumidots.frag", {}),
+    mosaic: (t, s) => visuals(c).frag("mosaic.frag", {"uTime" : c.x4p(t), "uScale" : c.x4p(s)}),
+    noisedisplace: (t, d) => visuals(c).frag("noise_displace.frag", {"uTime": c.x4p(t), "uDisplacement": c.x4p(d)}),
+    transform: (extra) => c.top("transform", extra),
+    rotate: (r) => visuals(c).transform({"rotate": r}),
+    translate: (x, y) => visuals(c).transform({"t": c.xyp(x, y), "extend": c.mp(3)}),
+    translatex: (x) => visuals(c).translate(x, c.fp(0)),
+    translatey: (y) => visuals(c).translate(c.fp(0), y),
+    val: (v) => c.top("hsvadjust", {"valuemult": v}),
+    transformscale: (f, x, y, e) => visuals(c).transform(Object.assign({
+        "extend": c.mp(e),
+        "s": c.xyp(c.powp(x, c.fp(-1)), c.powp(y, c.fp(-1)))
+    }, f)),
+    rgbsplit: (s) => visuals(c).frag("rgbsplit.frag", {"uFrames": c.x4p(s)}),
+    repeatT: (x, y) => transformscale({}, x, y, 3),
+    strobe: (s) => visuals(c).frag("strobe.frag", {"uSpeed": c.x4p(s), "uTime": c.x4p(c.seconds)}),
+    constc: (namevals) => c.chop("constant", namevals.reduce(function(map, val, idx) {
+        map["name" + idx] = c.sp(val.name)
+        map["value" + idx] = c.fp(val.value)
+        return map
+    }, {})),
+    rgbc: (color) => visuals(c).constc([
+        {name: "r", value: color.r / 255},
+        {name: "g", value: color.g / 255},
+        {name: "b", value: color.b / 255}
+    ]),
+    rgbt: (color) => c.top("chopto", {"chop": visuals(c).rgbc(color) }),
+    palettecycle: (palette, s) => {
+        let palettechop = c.chop("cross", {"cross": c.modp(s, c.fp(palette.length))}).run(palette.map((col) => visuals(c).rgbc(col).runT()))
+        let palettet = c.top("chopto", {"chop": c.chopp(palettechop), "dataformat": c.mp(2)})
+        return c.customconnectop((inputs) => 
+            c.top("composite", {"operand": c.mp(27)}).run([palettet.runT()].concat(inputs))
+        )
+    },
+    purplish: [rgb(150,110,100),rgb(223,143,67),rgb(76,73,100),rgb(146,118,133),rgb(165,148,180)],
+    sat: (s) => c.top("hsvadjust", {"saturationmult": s}),
 })
 //export const rect = (c) => c.tope("rectangle")
 module.exports = visuals
