@@ -103,8 +103,28 @@ const visuals = (c) => ({
             c.top("composite", {"operand": c.mp(27)}).run([palettet.runT()].concat(inputs))
         )
     },
-    purplish: [rgb(150,110,100),rgb(223,143,67),rgb(76,73,100),rgb(146,118,133),rgb(165,148,180)],
+    tealcontrast:[rgb(188, 242, 246), rgb(50, 107, 113), rgb(211, 90, 30), rgb(209, 122, 43), rgb(188, 242, 246)],
+    purplish:[rgb(150, 110, 100), rgb(223, 143, 67), rgb(76, 73, 100, ), rgb(146, 118, 133), rgb(165, 148, 180)],
+    sunset:[rgb(185, 117, 19), rgb(228, 187, 108), rgb(251, 162, 1), rgb(255, 243, 201)],
+    coolpink:[rgb(215, 40, 26), rgb(157, 60, 121), rgb(179, 83, 154), rgb(187, 59, 98)],
+    darkestred:[rgb(153, 7, 17), rgb(97, 6, 11), rgb(49, 7, 8), rgb(13, 7, 7), rgb(189, 5, 13)],
+    nature:[rgb(63, 124, 7), rgb(201, 121, 66), rgb(213, 101, 23), rgb(177, 201, 80), rgb(180, 207, 127)],
+    greenpurple:[rgb(42, 4, 74), rgb(11, 46, 89), rgb(13, 103, 89), rgb(122, 179, 23), rgb(160, 197, 95)],
+    tealblue:[rgb(188, 242, 246), rgb(50, 107, 113), rgb(188, 242, 246), rgb(165, 148, 180)],
     sat: (s) => c.top("hsvadjust", {"saturationmult": s}),
+    palette: (colors) => 
+        c.top("chopto", {
+            "chop":
+                c.chopp(c.chope("merge")
+                    .run(colors.map((col) => visuals(c).rgbc(col).runT()))
+                    .connect(c.chop("shuffle", {"method": c.mp(2), "nval": c.ip(3)}))),
+            "dataformat": c.mp(2)
+        }),
+    palettemap: (p, o) => 
+        c.insertconn(
+            visuals(c).frag("palette_map.frag", {"uOffset": c.x4p(o), "uSamples": c.x4p(c.fp(16))}), 
+            [], 
+            [visuals(c).palette(p).runT()])
 })
 //export const rect = (c) => c.tope("rectangle")
 module.exports = visuals
