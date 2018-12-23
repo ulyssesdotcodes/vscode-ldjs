@@ -95,11 +95,11 @@ const visuals = (c) => ({
         {name: "g", value: color.g / 255},
         {name: "b", value: color.b / 255}
     ]),
-    rgbt: (color) => c.top("chopto", {"chop": visuals(c).rgbc(color) }),
+    rgbt: (color) => c.top("chopto", {"chop": c.chopp(visuals(c).rgbc(color).runT()), "dataformat": c.mp(2) }),
     palettecycle: (palette, s) => {
         let palettechop = c.chop("cross", {"cross": c.modp(s, c.fp(palette.length))}).run(palette.map((col) => visuals(c).rgbc(col).runT()))
         let palettet = c.top("chopto", {"chop": c.chopp(palettechop), "dataformat": c.mp(2)})
-        return c.customconnectop((inputs) => 
+        return c.cc((inputs) => 
             c.top("composite", {"operand": c.mp(27)}).run([palettet.runT()].concat(inputs))
         )
     },
@@ -124,7 +124,13 @@ const visuals = (c) => ({
         c.insertconn(
             visuals(c).frag("palette_map.frag", {"uOffset": c.x4p(o), "uSamples": c.x4p(c.fp(16))}), 
             [], 
-            [visuals(c).palette(p).runT()])
+            [visuals(c).palette(p).runT()]),
+    edgesc: (original) => c.cc((inputs) => 
+        c.top("composite", {"operand": c.mp(0)})
+            .run([
+                inputs[0].connect(c.tope("edge")), 
+                inputs[0].connect(c.top("level", {"opacity": original}))
+            ]))
 })
 //export const rect = (c) => c.tope("rectangle")
 module.exports = visuals
