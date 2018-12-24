@@ -14,7 +14,13 @@ function hexToRgb(hex) {
     } : null;
 }
 
-let hexcolor = (h) => hexToRgb(h)
+const compose = (...fns) =>
+  fns.reduceRight((prevFn, nextFn) =>
+    (...args) => nextFn(prevFn(...args)),
+    value => value
+  );
+
+let hex = (h) => hexToRgb(h)
 let rgb = (r, g, b) => ({ r: r, g: g, b: b })
 
 const visuals = (c) => ({
@@ -50,7 +56,7 @@ const visuals = (c) => ({
     adata: (v) => visuals(c).atex().connect(visuals(c).frag('audio_data.frag', {'i_volume': c.x4p(v)})),
     noiset: (t) => c.top("noise", {"t": c.xyzp(c.fp(0), c.fp(0), t)}),
     lines: (spacing, width) => visuals(c).frag("lines.frag", {"i_spacing": c.x4p(spacing), "i_width": c.x4p(width)}),
-    shapes: (size, width, sides) => visuals(c).frag("shapes.frag", {"i_size": c.x4p(size), "i_width": c.x4p(width), "i_sides": c.x4p(sides)}),
+    shapes: (sides, size, width) => visuals(c).frag("shapes.frag", {"i_size": c.x4p(size), "i_width": c.x4p(width), "i_sides": c.x4p(sides)}),
     stringtheory: (time, angle, angle_delta, xoffset) =>
         visuals(c).frag("string_theory.frag", 
             { 
@@ -82,36 +88,24 @@ const visuals = (c) => ({
         "extend": c.mp(e),
         "s": c.xyp(c.powp(x, c.fp(-1)), c.powp(y, c.fp(-1)))
     }, f)),
+    scale: (xy) => visuals(c).transformscale({}, xy, xy, 1),
     rgbsplit: (s) => visuals(c).frag("rgbsplit.frag", {"uFrames": c.x4p(s)}),
     repeatT: (x, y) => transformscale({}, x, y, 3),
     strobe: (s) => visuals(c).frag("strobe.frag", {"uSpeed": c.x4p(s), "uTime": c.x4p(c.seconds)}),
+
+    const1: (v) => c.chop("constant", {"name0": c.sp("const"), "value0": v}),
     constc: (namevals) => c.chop("constant", namevals.reduce(function(map, val, idx) {
         map["name" + idx] = c.sp(val.name)
         map["value" + idx] = c.fp(val.value)
         return map
     }, {})),
+
     rgbc: (color) => visuals(c).constc([
         {name: "r", value: color.r / 255},
         {name: "g", value: color.g / 255},
         {name: "b", value: color.b / 255}
     ]),
     rgbt: (color) => c.top("chopto", {"chop": c.chopp(visuals(c).rgbc(color).runT()), "dataformat": c.mp(2) }),
-    palettecycle: (palette, s) => {
-        let palettechop = c.chop("cross", {"cross": c.modp(s, c.fp(palette.length))}).run(palette.map((col) => visuals(c).rgbc(col).runT()))
-        let palettet = c.top("chopto", {"chop": c.chopp(palettechop), "dataformat": c.mp(2)})
-        return c.cc((inputs) => 
-            c.top("composite", {"operand": c.mp(27)}).run([palettet.runT()].concat(inputs))
-        )
-    },
-    tealcontrast:[rgb(188, 242, 246), rgb(50, 107, 113), rgb(211, 90, 30), rgb(209, 122, 43), rgb(188, 242, 246)],
-    purplish:[rgb(150, 110, 100), rgb(223, 143, 67), rgb(76, 73, 100, ), rgb(146, 118, 133), rgb(165, 148, 180)],
-    sunset:[rgb(185, 117, 19), rgb(228, 187, 108), rgb(251, 162, 1), rgb(255, 243, 201)],
-    coolpink:[rgb(215, 40, 26), rgb(157, 60, 121), rgb(179, 83, 154), rgb(187, 59, 98)],
-    darkestred:[rgb(153, 7, 17), rgb(97, 6, 11), rgb(49, 7, 8), rgb(13, 7, 7), rgb(189, 5, 13)],
-    nature:[rgb(63, 124, 7), rgb(201, 121, 66), rgb(213, 101, 23), rgb(177, 201, 80), rgb(180, 207, 127)],
-    greenpurple:[rgb(42, 4, 74), rgb(11, 46, 89), rgb(13, 103, 89), rgb(122, 179, 23), rgb(160, 197, 95)],
-    tealblue:[rgb(188, 242, 246), rgb(50, 107, 113), rgb(188, 242, 246), rgb(165, 148, 180)],
-    sat: (s) => c.top("hsvadjust", {"saturationmult": s}),
     palette: (colors) => 
         c.top("chopto", {
             "chop":
@@ -120,17 +114,77 @@ const visuals = (c) => ({
                     .connect(c.chop("shuffle", {"method": c.mp(2), "nval": c.ip(3)}))),
             "dataformat": c.mp(2)
         }),
+
     palettemap: (p, o) => 
         c.insertconn(
             visuals(c).frag("palette_map.frag", {"uOffset": c.x4p(o), "uSamples": c.x4p(c.fp(16))}), 
             [], 
             [visuals(c).palette(p).runT()]),
+    palettecycle: (palette, s) => {
+        let palettechop = c.chop("cross", {"cross": c.modp(s, c.fp(palette.length))}).run(palette.map((col) => visuals(c).rgbc(col).runT()))
+        let palettet = c.top("chopto", {"chop": c.chopp(palettechop), "dataformat": c.mp(2)})
+        return c.cc((inputs) => 
+            c.top("composite", {"operand": c.mp(27)}).run([palettet.runT()].concat(inputs))
+        )
+    },
+
+    tealcontrast:[rgb(188, 242, 246), rgb(50, 107, 113), rgb(211, 90, 30), rgb(209, 122, 43), rgb(188, 242, 246)],
+    purplish:[rgb(150, 110, 100), rgb(223, 143, 67), rgb(76, 73, 100, ), rgb(146, 118, 133), rgb(165, 148, 180)],
+    sunset:[rgb(185, 117, 19), rgb(228, 187, 108), rgb(251, 162, 1), rgb(255, 243, 201)],
+    coolpink:[rgb(215, 40, 26), rgb(157, 60, 121), rgb(179, 83, 154), rgb(187, 59, 98)],
+    darkestred:[rgb(153, 7, 17), rgb(97, 6, 11), rgb(49, 7, 8), rgb(13, 7, 7), rgb(189, 5, 13)],
+    nature:[rgb(63, 124, 7), rgb(201, 121, 66), rgb(213, 101, 23), rgb(177, 201, 80), rgb(180, 207, 127)],
+    greenpurple:[rgb(42, 4, 74), rgb(11, 46, 89), rgb(13, 103, 89), rgb(122, 179, 23), rgb(160, 197, 95)],
+    tealblue:[rgb(188, 242, 246), rgb(50, 107, 113), rgb(188, 242, 246), rgb(165, 148, 180)],
+    neon: ["A9336B", "5F2F88", "CB673D", "87BB38"].map(hexToRgb),
+    fire: ["F07F13", "800909", "F27D0C", "FDCF58"].map(hexToRgb),
+    buddhist: ["0000FF", "FFFF00", "FF0000", "FFFFFF", "FF9800"].map(hexToRgb),
+    flower: ["000E00", "003D00", "E4A900", "FEDEEF", "C99CB8"].map(hexToRgb),
+    bluepink: ["F2C6F2", "F8F0F0", "A6D1FF", "3988E1", "4C8600"].map(hexToRgb),
+    lime: ["FF4274", "DCD549", "ABDFAB", "437432", "033B45"].map(hexToRgb),
+
+    sat: (s) => c.top("hsvadjust", {"saturationmult": s}),
     edgesc: (original) => c.cc((inputs) => 
         c.top("composite", {"operand": c.mp(0)})
             .run([
                 inputs[0].connect(c.tope("edge")), 
                 inputs[0].connect(c.top("level", {"opacity": original}))
-            ]))
+            ])),
+    addops: (nodes) => c.top("composite", { "operand":c.mp(0)}).run(nodes.map((n) => n.runT())),
+    multops: (nodes) => c.top("composite", { "operand":c.mp(27)}).run(nodes.map((n) => n.runT())),
+    overops: (nodes) => c.top("composite", { "operand":c.mp(31)}).run(nodes.map((n) => n.runT())),
+    fadeops: (idx, ops) => c.top("switch", { "blend": c.tp(true), "index": bounce(idx, 0.4)}).run(ops.map(o => o.runT())),
+    bounce: (fp, i) => c.absp(c.subp(c.modp(fp, c.fp(i * 2)), c.fp(1))),
+
+    fadeops: (idx, ops) => c.top("switch", { "blend": c.tp(true), "index": bounce(idx, 0.4)}).run(ops.map(o => o.runT())),
+
+    triggercount: (l, f) => f.connect(c.chop("count", {
+        "threshold": c.tp(true),
+        "threshup": c.fp(0.5),
+        "limitmax": c.fp(l),
+        "output": c.mp(1)
+    })),
+
+    littleplanet: () => visuals(c).frag("little_planet.frag", {}),
+
+    triggerops: (f, inputs) => c.top("switch", {
+        "index": c.chan(c.ip(0), visuals(c).triggercount(inputs.length - 1, f))
+    }).run(inputs.map((i) => i.runT())),
+
+    fade: (opacity) => c.cc((inputs) => 
+        c.feedbackChain(c.cc((fbinputs) => 
+            c.top("composite", {"operand": c.mp(0)})
+                .run(inputs.concat([
+                    c.top("level", {"opacity": opacity}).run(fbinputs)
+                ])))).run(inputs)),
+    secs: (m) => c.multp(c.seconds, m),
+
+    geo: () => c.comp("geometry", {externaltox: c.sp("toxes/Visuals/geo.tox")}),
+    rendered: (g) => c.top("render", {
+        "lights": c.compp(c.compe("light")),
+        "geometry": c.compp(g),
+        "camera": c.compp(c.compe("camera"))
+    })
 })
 //export const rect = (c) => c.tope("rectangle")
 module.exports = visuals

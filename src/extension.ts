@@ -14,6 +14,21 @@ let config = vscode.workspace.getConfiguration('ldjs')
 
 let replcache = []
 
+function debounce(func, wait, immediate) {
+	var timeout;
+	return function() {
+		var context = this, args = arguments;
+		var later = function() {
+			timeout = null;
+			if (!immediate) func.apply(context, args);
+		};
+		var callNow = immediate && !timeout;
+		clearTimeout(timeout);
+		timeout = setTimeout(later, wait);
+		if (callNow) func.apply(context, args);
+	};
+};
+
 
 class Socket {
 	readonly SERVER_URL = config.get<string>('server_url');
@@ -62,12 +77,15 @@ class LDJSBridge {
     private _statusBarItem: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right)
     private socket = new Socket();
     private lastText;
+    private fileUri;
 
-    public constructor(){
+    public constructor(fileUri){
         this.socket.makeConnection();
+        this.fileUri = fileUri
     }
 
     public update(){
+        if(vscode.window.activeTextEditor.document.uri.fsPath !== this.fileUri.fsPath) { return; }
         let text = vscode.window.activeTextEditor.document.getText();
         if(text != this.lastText) {
             this._statusBarItem.text = this.runForStatus(text);
@@ -117,15 +135,29 @@ export function activate(context: vscode.ExtensionContext) {
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with  registerCommand
     // The commandId parameter must match the command field in package.json
+    let bridgeupdate ;
     let start = vscode.commands.registerCommand('extension.ldjsstart', () => {
-        bridge = new LDJSBridge()
+        bridge = new LDJSBridge(vscode.window.activeTextEditor.document.uri)
+        bridgeupdate = debounce(bridge.update.bind(bridge), 200, false)
+        vscode.window.onDidChangeTextEditorSelection((e) => {
+            if (bridge != undefined) {
+                bridgeupdate();
+            }
+        })
     });
+
+    let run = vscode.commands.registerCommand('extension.ldjsrun', () => {
+        bridge = bridge !== undefined ? bridge : new LDJSBridge(vscode.window.activeTextEditor.document.uri)
+        bridge.update()
+    });
+
 
     let end = vscode.commands.registerCommand('extension.ldjsend', () => {
         if(bridge != undefined) {
             bridge.dispose();
             bridge = undefined;
         }
+        vscode.window.onDidChangeTextEditorSelection(null)
     });
 
     let clearRequire = vscode.commands.registerCommand('extension.ldjsclearrequire', () => {
@@ -135,14 +167,9 @@ export function activate(context: vscode.ExtensionContext) {
         replcache = []
     });
 
-
-    vscode.window.onDidChangeTextEditorSelection((e) => {
-        if (bridge != undefined) {
-            bridge.update()
-        }
-    })
     
     context.subscriptions.push(start);
+    context.subscriptions.push(run);
     context.subscriptions.push(end);
 }
 

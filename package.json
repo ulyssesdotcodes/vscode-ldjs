@@ -11,6 +11,7 @@
     ],
     "activationEvents": [
         "onCommand:extension.ldjsstart",
+        "onCommand:extension.ldjsrun",
         "onLanguage:js"
     ],
     "main": "./out/extension",
@@ -25,10 +26,21 @@
                 "title": "LDJS: Stop Server"
             },
             {
+                "command": "extension.ldjsrun",
+                "title": "LDJS: Run"
+            },
+            {
                 "command": "extension.ldjsclearrequire",
                 "title": "LDJS: Clear require cache"
             }
         ],
+        "keybindings": [{
+            "command": "extension.ldjsrun",
+            "key":"ctrl+enter",
+            "mac": "cmd+enter",
+            "when": "editortextfocus"
+
+        }],
         "configuration": {
             "type": "object",
             "title": "LDJS configuration",
