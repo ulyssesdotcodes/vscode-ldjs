@@ -135,18 +135,25 @@ export function activate(context: vscode.ExtensionContext) {
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with  registerCommand
     // The commandId parameter must match the command field in package.json
-    let bridgeupdate ;
+    let bridgeupdate;
+    let startcmd;
     let start = vscode.commands.registerCommand('extension.ldjsstart', () => {
         bridge = new LDJSBridge(vscode.window.activeTextEditor.document.uri)
         bridgeupdate = debounce(bridge.update.bind(bridge), 200, false)
-        vscode.window.onDidChangeTextEditorSelection((e) => {
-            if (bridge != undefined) {
+        startcmd = vscode.window.onDidChangeTextEditorSelection((e) => {
+            if (bridgeupdate != undefined) {
                 bridgeupdate();
             }
         })
+        context.subscriptions.push(startcmd);
     });
 
     let run = vscode.commands.registerCommand('extension.ldjsrun', () => {
+        bridgeupdate = undefined
+        if(startcmd != undefined) {
+            startcmd.dispose();
+            startcmd = undefined;
+        }
         bridge = bridge !== undefined ? bridge : new LDJSBridge(vscode.window.activeTextEditor.document.uri)
         bridge.update()
     });
@@ -157,7 +164,11 @@ export function activate(context: vscode.ExtensionContext) {
             bridge.dispose();
             bridge = undefined;
         }
-        vscode.window.onDidChangeTextEditorSelection(null)
+        if(startcmd != undefined) {
+            startcmd.dispose();
+            startcmd = undefined
+        }
+        bridgeupdate = undefined;
     });
 
     let clearRequire = vscode.commands.registerCommand('extension.ldjsclearrequire', () => {
@@ -171,6 +182,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(start);
     context.subscriptions.push(run);
     context.subscriptions.push(end);
+    context.subscriptions.push(clearRequire);
 }
 
 // this method is called when your extension is deactivated

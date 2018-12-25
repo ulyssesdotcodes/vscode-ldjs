@@ -26,23 +26,23 @@ let rgb = (r, g, b) => ({ r: r, g: g, b: b })
 const visuals = (c) => ({
     ain: (g) => c.chope("audiodevicein")
         .connect(c.chop("resample", {"timeslice": c.tp(false), "method": c.mp(0), "relative": c.mp(0), "end": c.fp(0.03)}))
-        .connect(c.chop("math", {"gain": c.fp(g)})),
-    aine: () => visuals(c).ain(1),
-    atex: () => c.top("chopto", {"chop": c.chopp(visuals(c).aine())}),
+        .connect(c.chop("math", {"gain": g})),
+    aine: (v) => visuals(c).ain(v == undefined ? c.fp(1) : v),
+    atex: (v) => c.top("chopto", {"chop": c.chopp(visuals(c).ain(v))}),
     aspect: () => c.chope('audiodevicein').connect(c.chope('audiospectrum', {})),
     aspecttex: () => c.top("chopto", {"chop": c.chopp(visuals(c).aspect().out())}),
     analyze: (i) => c.chop('analyze', {"function": c.mp(i)}),
-    vol: () => visuals(c).aine().connect(visuals(c).analyze(6)),
-    volc: () => c.chan(c.ip(0), visuals(c).vol()),
+    vol: (v) => visuals(c).ain(v).connect(visuals(c).analyze(6)),
+    volc: (v) => c.chan(c.ip(0), visuals(c).vol(v)),
     lowPass: () => c.chop("audiofilter", {"filter": c.mp(0)}),
-    lowv: () => visuals(c).aine().connect(visuals(c).lowPass()).connect(visuals(c).analyze(6)),
-    lowvc: () => c.chan(c.ip(0), visuals(c).lowv()),
+    lowv: (v) => visuals(c).ain(v).connect(visuals(c).lowPass()).connect(visuals(c).analyze(6)),
+    lowvc: (v) => c.chan(c.ip(0), visuals(c).lowv(v)),
     highPass: () => c.chop("audiofilter", {"filter": c.mp(1)}),
-    highv: () => visuals(c).aine().connect(visuals(c).highPass()).connect(visuals(c).analyze(6)),
-    highvc: () => c.chan(c.ip(0), visuals(c).highv()),
+    highv: (v) => visuals(c).ain().connect(visuals(c).highPass()).connect(visuals(c).analyze(6)),
+    highvc: (v) => c.chan(c.ip(0), visuals(c).highv()),
     bandPass: (b) => c.chop("audiofilter", {"filter": c.mp(2), "cutofflog": c.multp(b, c.fp(4.5))}),
-    bandv: (b) => visuals(c).aine().connect(visuals(c).bandPass(b)).connect(visuals(c).analyze(6)),
-    bandvc: (b) => c.chan(c.ip(0), visuals(c).bandv(b)),
+    bandv: (b, v) => visuals(c).ain(v).connect(visuals(c).bandPass(b)).connect(visuals(c).analyze(6)),
+    bandvc: (b, v) => c.chan(c.ip(0), visuals(c).bandv(b)),
     mchan: (chan) => c.chan(c.sp(chan), c.chope("midiinmap")),
     mchop: (chan) => c.chope("midiinmap").connect(c.chop("select", {"channames": c.sp(chan)})),
     frag: (fragname, uniforms) => c.top("glslmulti", Object.assign({
@@ -53,7 +53,7 @@ const visuals = (c) => ({
             "format": c.mp(4) 
         }, zip([Array(8).fill("uniname"), Array.from(Array(8).keys()), Object.keys(uniforms)]).reduce((acc, v) => { acc[v[0]+v[1]] = c.sp(v[2]); return acc; }, {})
         , zip([Array(8).fill("value"), Array.from(Array(8).keys()), Object.values(uniforms)]).reduce((acc, v) => { acc[v[0]+v[1]] = v[2]; return acc; }, {}))),
-    adata: (v) => visuals(c).atex().connect(visuals(c).frag('audio_data.frag', {'i_volume': c.x4p(v)})),
+    adata: (v) => visuals(c).atex(v).connect(visuals(c).frag('audio_data.frag', {'i_volume': c.x4p(c.fp(1))})),
     noiset: (t) => c.top("noise", {"t": c.xyzp(c.fp(0), c.fp(0), t)}),
     lines: (spacing, width) => visuals(c).frag("lines.frag", {"i_spacing": c.x4p(spacing), "i_width": c.x4p(width)}),
     shapes: (sides, size, width) => visuals(c).frag("shapes.frag", {"i_size": c.x4p(size), "i_width": c.x4p(width), "i_sides": c.x4p(sides)}),
@@ -178,6 +178,7 @@ const visuals = (c) => ({
                     c.top("level", {"opacity": opacity}).run(fbinputs)
                 ])))).run(inputs)),
     secs: (m) => c.multp(c.seconds, m),
+    floor: (f) => c.funcp("math.floor")(f),
 
     geo: () => c.comp("geometry", {externaltox: c.sp("toxes/Visuals/geo.tox")}),
     rendered: (g) => c.top("render", {
