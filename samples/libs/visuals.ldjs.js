@@ -25,6 +25,7 @@ let rgb = (r, g, b) => ({ r: r, g: g, b: b })
 
 const visuals = (c) => ({
     ain: (g) => c.chope("audiodevicein")
+        .connect(c.chop("select", {channames: c.sp("chan1")}))
         .connect(c.chop("resample", {"timeslice": c.tp(false), "method": c.mp(0), "relative": c.mp(0), "end": c.fp(0.03)}))
         .connect(c.chop("math", {"gain": g})),
     aine: (v) => visuals(c).ain(v == undefined ? c.fp(1) : v),
@@ -180,12 +181,93 @@ const visuals = (c) => ({
     secs: (m) => c.multp(c.seconds, m),
     floor: (f) => c.funcp("math.floor")(f),
 
-    geo: () => c.comp("geometry", {externaltox: c.sp("toxes/Visuals/geo.tox")}),
-    rendered: (g) => c.top("render", {
+    geo: (params) => c.comp("geometry", Object.assign({externaltox: c.sp("toxes/Visuals/geo.tox")}, params)),
+    render: (g) => c.top("render", {
         "lights": c.compp(c.compe("light")),
         "geometry": c.compp(g),
         "camera": c.compp(c.compe("camera"))
-    })
+    }),
+    sinC: (i, phase, off) => 
+        c.chop("wave", {
+            "channelname": c.sp("rz"), 
+            "end": i, 
+            "endunit": c.mp(1), 
+            phase: phase, 
+            offset: off
+    }),
+    scaleC: (i, n) => c.chop("wave", {
+        channelname: c.sp("sx"), 
+        "end" : i, 
+        "endunit": c.mp(1), 
+        "wavetype": c.mp(4), 
+        "period": i, 
+        "amp": n
+    }),
+    sidesTorus: (sides, scale) => c.sop("torus", {
+        orientation: c.np(2),
+        rows: c.np(10),
+        columns: sides,
+        radius: c.xyp(scale, c.multp(scale, c.fp(0.5)))
+    }),
+    lineGeo: (ty, rz, sx, sy, sop, width, instances, mat) => {
+        let tx = c.chop("wave", {
+            channelname: c.sp("tx"), 
+            end: instances,
+            endunit: c.mp(1), 
+            period: instances,
+            amp: width,
+            offset: c.fp(-0.5),
+            "wavetype": c.mp(4), 
+        });
+        let typ = ty.connect(c.chop("resample", {
+            rate: instances,
+            timeslice: c.tp(false)
+        })).connect(c.chop("rename", {renameto: c.sp("ty")}))
+        let poses = c.chop("merge", {align: c.mp(7)}).run(
+            [tx, typ, 
+                rz.c(c.chop("rename", {renameto: c.sp("rz")})), 
+                sx.c(c.chop("rename", {renameto: c.sp("sx")})), 
+                sx.c(c.chop("rename", {renameto: c.sp("sz")})), 
+                sy.c(c.chop("rename", {renameto: c.sp("sy")}))]
+                .map((r) => r.runT()))
+        let sgeo = sop.connect(visuals(c).geo({
+            material: c.matp(mat), 
+            instanceop: c.chopp(poses),
+            instancing: c.tp(true),
+            instancetx: c.sp("tx"),
+            instancety: c.sp("ty"),
+            instancetz: c.sp("tz"),
+            instancerx: c.sp("rx"),
+            instancery: c.sp("ry"),
+            instancerz: c.sp("rz"),
+            instancesx: c.sp("sx"),
+            instancesy: c.sp("sy"),
+            instancesz: c.sp("sz"),
+        }))
+        let centerCam = (t, r) => c.comp("camera", {
+            translate: t,
+            // pivot: v3mult (float (-1)) t,
+            rotate: r
+        })
+        return visuals(c).render(sgeo)
+            // centerCam((c.xyzp(c.fp(0), c.fp(0), c.fp(50)), 
+            // c.xyzp(c.fp(0), c.fp(0), c.fp(0)))))
+    },
+    lineLines: (width, scale, inst, sop) => {
+        let instances = c.addp(inst, c.fp(2))
+        return visuals(c).lineGeo(
+            visuals(c).ain(scale).connect(
+                c.chop("resample", {
+                    method: c.mp(0), 
+                    end: instances, 
+                    endunit: c.mp(1),
+                    timeslice: c.tp(false)
+                })),
+            visuals(c).sinC(instances, c.fp(0), c.fp(0)),
+            visuals(c).scaleC(instances, c.fp(10)),
+            visuals(c).scaleC(instances, c.fp(10)),
+            sop, width, instances, c.mate("wireframe").runT())
+    }
 })
 //export const rect = (c) => c.tope("rectangle")
 module.exports = visuals
