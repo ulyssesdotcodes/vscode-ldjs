@@ -74,7 +74,7 @@ class Socket {
 }
 
 class LDJSBridge {
-    private _statusBarItem: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right)
+    private _outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("ldjs")
     private socket = new Socket();
     private lastText;
     private fileUri;
@@ -82,15 +82,16 @@ class LDJSBridge {
     public constructor(fileUri){
         this.socket.makeConnection();
         this.fileUri = fileUri
+        this._outputChannel.show();
     }
 
     public update(){
         if(vscode.window.activeTextEditor.document.uri.fsPath !== this.fileUri.fsPath) { return; }
         let text = vscode.window.activeTextEditor.document.getText();
         if(text != this.lastText) {
-            this._statusBarItem.text = this.runForStatus(text);
-            this._statusBarItem.show();
             this.lastText = text;
+            this._outputChannel.clear()
+            this.runForStatus(text).slice(0, 8).map(l => this._outputChannel.appendLine(l))
         }
     }
 
@@ -108,18 +109,22 @@ class LDJSBridge {
     }
 
     runForStatus(text) {
-        let result: Either<string[], string> = tryCatch<Either<string[], string>>(() => this.run(text) as Either<string[], string>).mapLeft(e => [e.message]).chain(r => r)
+        let result: Either<string[], string> = tryCatch<Either<string[], string>>(() => {
+            return this.run(text) as Either<string[], string>
+        }).mapLeft(e => {
+            return [e.message].concat(e.stack.split('\n'))
+        }).chain(r => r)
         if(result.isRight()) {
             this.socket.send(result.value);
-            return "Correct";
+            return ["Correct"];
         } else {
-            return result.value[0];
+            return result.value;
         }
     }
 
     dispose() {
         this.socket.dispose();
-        this._statusBarItem.dispose();
+        this._outputChannel.dispose();
     }
 }
 
