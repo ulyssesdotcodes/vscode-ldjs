@@ -332,7 +332,57 @@ const visuals = (c) => ({
             , Separation: sep
             , Alignment: cohesion
             , Speed: sp
-            })
-    })
+            }),
+    sinct: (t, i, w) => c.cc((inputs) => 
+        vc.multops([
+            c.top("chopto", {"chop": 
+                c.chopp([vc.sinC(i, t , w)])}).runT()
+        ].concat(inputs))),
+    tapbeat: (input, g, reset) => {
+        let beat = input.c(c.chop("logic", {preop: c.mp(5)})).runT()
+        let beathold = c.chop("hold").run([
+                c.chop("speed").run([visuals(c).const1(c.fp(1)).runT(), beat])
+                        .c(c.chop("delay", {delay: c.fp(1), delayunit: c.mp(1)})), 
+                beat]).c(c.chop("null", {cooktype: c.mp(2)})).runT()
+        let beattrail = 
+                c.chop("trail", {
+                        wlength: c.fp(8), 
+                        wlengthunit: c.mp(1), 
+                        capture: c.mp(1)}).run([beathold])
+                .c(c.chop("delete", {
+                        delsamples: c.tp(true),
+                        condition: c.mp(5),  
+                        inclvalue1:c.tp(false)})).runT()
+        let bps = c.chop("math", {postop: c.mp(5), gain: g})
+                .c(c.chop("analyze", {function: c.mp(1)}))
+                .run([beattrail])
+        let beataccum = c.chop("speed").run([bps, reset.runT()])
+        let finalbeat = 
+                beataccum 
+                    .c(c.chop("limit", {
+                    max: c.fp(1), 
+                    type: c.mp(2), 
+                    min: c.fp(0)})) 
+                    .c(c.chop("logic", {
+                    boundmax: c.fp(0.08), 
+                    preop: c.mp(5), 
+                    convert: c.mp(2)}))
+        return {beatpulse: finalbeat, bps: bps}
+        },
+    tapbeatm9: tapbeat(visuals(c).mchop("b9"), (c.powp(c.fp(2), (c.floorp(c.multp(c.subp(visuals(c).mchan("s1a"), c.fp(0.5)), c.fp(4)))))), visuals(c).mchop("b10")),
+
+    beatramp: (beat) => c.chop("speed", {resetcondition: c.mp(2)}).run([beat.bps, beat.beatpulse]),
+    beatxcount: (x, reset, beat) => c.chop("count", { output: c.mp(1), limitmax: c.fp(x - 1) }).run([beat.beatpulse, reset]),
+    beatxpulse: (x, reset, beat) => beatxcount(x, reset, beat).c(c.chop("logic", { preop: c.mp(6) })),
+    beatxramp: (x, reset, beat) => 
+        c.chop("speed").run([
+                beat.bps.c(c.chop("math", { gain: c.fp(1/x) })).runT(), 
+                beatxpulse(x, reset, beat).runT()
+        ]),
+    beatseconds: (b, reset) => c.multp(c.seconds, c.chan0(b.bps)),
+    tapbeatm9sec: beatseconds(tapbeatm9, visuals(c).mchop("b10")),
+    beatsecondschop: (b) => c.chop("speed").run([b.bps.runT()])
+})
+
 //export const rect = (c) => c.tope("rectangle")
 module.exports = visuals
