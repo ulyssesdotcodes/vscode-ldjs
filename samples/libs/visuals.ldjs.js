@@ -29,9 +29,9 @@ const visuals = (c) => ({
         .connect(c.chop("resample", {"timeslice": c.tp(false), "method": c.mp(0), "relative": c.mp(0), "end": c.fp(0.03)}))
         .connect(c.chop("math", {"gain": g})),
     aine: (v) => visuals(c).ain(v == undefined ? c.fp(1) : v),
-    atex: (v) => c.top("chopto", {"chop": c.chopp(visuals(c).ain(v))}),
+    atex: (v) => c.top("chopto", {"chop": c.chopp([visuals(c).ain(v)])}),
     aspect: () => c.chope('audiodevicein').connect(c.chope('audiospectrum', {})),
-    aspecttex: () => c.top("chopto", {"chop": c.chopp(visuals(c).aspect().out())}),
+    aspecttex: () => c.top("chopto", {"chop": c.chopp([visuals(c).aspect().out()])}),
     analyze: (i) => c.chop('analyze', {"function": c.mp(i)}),
     vol: (v) => visuals(c).ain(v).connect(visuals(c).analyze(6)),
     volc: (v) => c.chan(c.ip(0), visuals(c).vol(v)),
@@ -49,7 +49,7 @@ const visuals = (c) => ({
     frag: (fragname, uniforms) => c.top("glslmulti", Object.assign({
             "resolutionw": c.ip(1920), 
             "resolutionh": c.ip(1080),
-            "pixeldat": c.datp(c.dat("text", {"file" : c.sp("scripts/Visuals/" + fragname)})),
+            "pixeldat": c.datp([c.dat("text", {"file" : c.sp("scripts/Visuals/" + fragname)})]),
             "outputresolution": c.mp(9),
             "format": c.mp(4) 
         }, zip([Array(8).fill("uniname"), Array.from(Array(8).keys()), Object.keys(uniforms)]).reduce((acc, v) => { acc[v[0]+v[1]] = c.sp(v[2]); return acc; }, {})
@@ -66,15 +66,16 @@ const visuals = (c) => ({
                 "i_angle_delta": c.x4p(angle_delta === undefined ? c.fp(0.4) : angle_delta), 
                 "i_xoff": c.x4p(xoffset === undefined ? c.fp(0) : xoffset)
             }),
-    commandCode: (text) => c.top("text", {
+    crosshatch: () => visuals(c).frag("crosshatch.frag", {}),
+    commandcode: (text) => c.top("text", {
         "resolutionw": c.ip(1920), 
         "resolutionh": c.ip(1080), 
         "fontsizey": c.fp(16), 
         "alignx": c.mp(0),
         "aligny": c.mp(0),
-        "text": c.sp(text)
+        "text": c.sp(text),
+        "fontautosize": c.mp(1)
     }),
-    crosshatch: () => visuals(c).frag("crosshatch.frag", {}),
     flowermod: (s) => visuals(c).frag("flower_mod.frag", {"uSeconds": c.x4p(s)}),
     lumidots: () => visuals(c).frag("lumidots.frag", {}),
     mosaic: (t, s) => visuals(c).frag("mosaic.frag", {"uTime" : c.x4p(t), "uScale" : c.x4p(s)}),
@@ -95,24 +96,27 @@ const visuals = (c) => ({
     strobe: (s) => visuals(c).frag("strobe.frag", {"uSpeed": c.x4p(s), "uTime": c.x4p(c.seconds)}),
 
     const1: (v) => c.chop("constant", {"name0": c.sp("const"), "value0": v}),
-    constc: (namevals) => c.chop("constant", namevals.reduce(function(map, val, idx) {
-        map["name" + idx] = c.sp(val.name)
-        map["value" + idx] = c.fp(val.value)
+    constc: (namevals) => c.chop("constant", Object.entries(namevals).reduce(function(map, val, idx) {
+        map["name" + idx] = c.sp(val[0])
+        map["value" + idx] = val[1]
         return map
     }, {})),
 
-    rgbc: (color) => visuals(c).constc([
-        {name: "r", value: color.r / 255},
-        {name: "g", value: color.g / 255},
-        {name: "b", value: color.b / 255}
-    ]),
-    rgbt: (color) => c.top("chopto", {"chop": c.chopp(visuals(c).rgbc(color).runT()), "dataformat": c.mp(2) }),
+    rgbc: (color) => visuals(c).constc(
+        { r: c.fp(color.r / 255),
+          g: c.fp(color.g / 255),
+          b: c.fp(color.b / 255),
+        }
+    ),
+    rgbt: (color) => c.top("chopto", {"chop": c.chopp([visuals(c).rgbc(color).runT()]), "dataformat": c.mp(2) }),
     palette: (colors) => 
         c.top("chopto", {
             "chop":
-                c.chopp(c.chope("merge")
-                    .run(colors.map((col) => visuals(c).rgbc(col).runT()))
-                    .connect(c.chop("shuffle", {"method": c.mp(2), "nval": c.ip(3)}))),
+                c.chopp([
+                    c.chope("merge")
+                        .run(colors.map((col) => visuals(c).rgbc(col).runT()))
+                        .connect(c.chop("shuffle", {"method": c.mp(2), "nval": c.ip(3)}))
+                ]),
             "dataformat": c.mp(2)
         }),
 
@@ -123,7 +127,7 @@ const visuals = (c) => ({
             [visuals(c).palette(p).runT()]),
     palettecycle: (palette, s) => {
         let palettechop = c.chop("cross", {"cross": c.modp(s, c.fp(palette.length))}).run(palette.map((col) => visuals(c).rgbc(col).runT()))
-        let palettet = c.top("chopto", {"chop": c.chopp(palettechop), "dataformat": c.mp(2)})
+        let palettet = c.top("chopto", {"chop": c.chopp([palettechop]), "dataformat": c.mp(2)})
         return c.cc((inputs) => 
             c.top("composite", {"operand": c.mp(27)}).run([palettet.runT()].concat(inputs))
         )
@@ -182,10 +186,11 @@ const visuals = (c) => ({
     floor: (f) => c.funcp("math.floor")(f),
 
     geo: (params) => c.comp("geometry", Object.assign({externaltox: c.sp("toxes/Visuals/geo.tox")}, params)),
-    render: (g) => c.top("render", {
-        "lights": c.compp(c.compe("light")),
+    tox: (tox, params) => c.comp("base", Object.assign({externaltox: c.sp(tox)}, params)),
+    render: (g, cam, light) => c.top("render", {
+        "lights": light === undefined ? c.compp([c.compe("light")]) : c.compp(light),
         "geometry": c.compp(g),
-        "camera": c.compp(c.compe("camera"))
+        "camera": cam === undefined ? c.compp([c.compe("camera")]) : c.compp(cam)
     }),
     sinC: (i, phase, off) => 
         c.chop("wave", {
@@ -231,8 +236,8 @@ const visuals = (c) => ({
                 sy.c(c.chop("rename", {renameto: c.sp("sy")}))]
                 .map((r) => r.runT()))
         let sgeo = sop.connect(visuals(c).geo({
-            material: c.matp(mat), 
-            instanceop: c.chopp(poses),
+            material: c.matp([mat]), 
+            instanceop: c.chopp([poses]),
             instancing: c.tp(true),
             instancetx: c.sp("tx"),
             instancety: c.sp("ty"),
@@ -250,8 +255,6 @@ const visuals = (c) => ({
             rotate: r
         })
         return visuals(c).render(sgeo)
-            // centerCam((c.xyzp(c.fp(0), c.fp(0), c.fp(50)), 
-            // c.xyzp(c.fp(0), c.fp(0), c.fp(0)))))
     },
     lineLines: (width, scale, inst, sop) => {
         let instances = c.addp(inst, c.fp(2))
@@ -267,7 +270,69 @@ const visuals = (c) => ({
             visuals(c).scaleC(instances, c.fp(10)),
             visuals(c).scaleC(instances, c.fp(10)),
             sop, width, instances, c.mate("wireframe").runT())
-    }
-})
+    },
+    centerCam: (t, r) => c.comp("camera", {
+        t: c.xyzp(c.fp(0), c.fp(0), t),
+        p: c.xyzp(c.fp(0), c.fp(0), c.multp(c.fp(-1), t)),
+        r: r
+    }),
+    torusGeo: (sop, lightmap) => {
+        let s = c.chop("wave", {
+            end: c.fp(50), 
+            endunit: c.mp(1),
+            amp: c.fp(0.1),
+            phase: visuals(c).secs(c.fp(0.3)),
+            offset: c.fp(1),
+        })
+        let chop = 
+            c.chop("merge").run([
+                c.chop("sopto", {
+                    sop: c.sopp([c.sop("torus", {
+                        rows: c.ip(5), 
+                        cols:c.ip(10)})])}).runT(),
+                s.c(c.chop("rename", {renameto: c.sp("sx")})).runT(),
+                s.c(c.chop("rename", {renameto: c.sp("sy")})).runT(),
+                s.c(c.chop("rename", {renameto: c.sp("sz")})).runT()
+                ])
+
+        let metalic = c.mat("pbr", {
+            roughness: c.fp(0.2), 
+            metallic: c.fp(0.5),
+            // rim1enable: c.tp(true),
+            // rim1color: c.rgbp(c.fp(1), c.fp(0), c.fp(0.55)),
+        })
+
+        let sgeo = sop.connect(visuals(c).geo({
+            material: c.matp([metalic]), 
+            scale: c.fp(1),
+            instanceop: c.chopp([chop]),
+            instancing: c.tp(true),
+            instancetx: c.sp("tx"),
+            instancety: c.sp("ty"),
+            instancetz: c.sp("tz"),
+            instancerx: c.sp("rx"),
+            instancery: c.sp("ry"),
+            instancerz: c.sp("rz"),
+            instancesx: c.sp("sx"),
+            instancesy: c.sp("sy"),
+            instancesz: c.sp("sz"),
+        }))
+
+        return visuals(c).render([sgeo], 
+            [visuals(c).centerCam(c.fp(5), c.xyzp(c.fp(-30), visuals(c).secs(c.fp(30)), c.fp(0)))], 
+            [c.comp("environmentlight", {
+                envlightmap: c.topp([lightmap]),
+                envlightmapprefilter: c.mp(0)
+            })]
+        );
+    },
+    flocking: (cohesion, sep, sp) => 
+        visuals(c).tox("toxes/Visuals/flockingGpu.tox",
+            { Cohesion: cohesion
+            , Separation: sep
+            , Alignment: cohesion
+            , Speed: sp
+            })
+    })
 //export const rect = (c) => c.tope("rectangle")
 module.exports = visuals
