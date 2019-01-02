@@ -67,22 +67,23 @@ let tapbeat = (i, g) => {
 let n = //vc.render(c.sope("sphere").connect(vc.geo()))
 //     vc.adata(c.fp(2))
     vc.addops([
-    vc.adata(c.fp(2))
-//     vc.flocking(c.fp(1), vc.volc(), c.fp(3))
+//     vc.adata(c.fp(2))
+
+    vc.flocking(c.fp(1), vc.volc(), c.fp(3))
 //     vc.torusGeo(c.sop("sphere"), vc.adata(c.fp(1)))
 //     vc.torusGeo(c.sop("sphere"))
 //         .c(vc.fade(c.fp(0.9)))
-    .c(vc.val(c.fp(1)))
-//     .c(sinct(vc.secs(c.fp(0.2)), vc.volc(c.fp(200)), c.fp(0)))
-    .c(vc.palettecycle(vc.purplish, vc.secs(c.fp(1))))
-//     .c(vc.mosaic(vc.secs(c.fp(1)), c.fp(50)))
-    .c(vc.sat(c.fp(5)))
-//     .c(vc.val(vc.volc(c.fp(10))))
-//     .c(vc.edgesc(vc.volc(c.fp(4))))
-    .c(vc.val(c.fp(0.4)))
-//     .c(vc.fade(vc.mchan("s1")))
-    .c(vc.fade(c.fp(0.98))),
-    vc.commandcode({CommandCode}),
+//     .c(vc.val(c.fp(1)))
+// //     .c(sinct(vc.secs(c.fp(0.2)), vc.volc(c.fp(200)), c.fp(0)))
+//     .c(vc.palettecycle(vc.purplish, vc.secs(c.fp(1))))
+// //     .c(vc.mosaic(vc.secs(c.fp(1)), c.fp(50)))
+//     .c(vc.sat(c.fp(5)))
+// //     .c(vc.val(vc.volc(c.fp(10))))
+// //     .c(vc.edgesc(vc.volc(c.fp(4))))
+//     .c(vc.val(c.fp(0.4)))
+// //     .c(vc.fade(vc.mchan("s1")))
+//     .c(vc.fade(c.fp(0.98))),
+    , vc.commandcode({CommandCode}),
     ])
 
 return n.connect(c.tope("out")).out();

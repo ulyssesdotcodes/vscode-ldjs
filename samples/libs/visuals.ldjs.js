@@ -27,7 +27,7 @@ const visuals = (c) => ({
     ain: (g) => c.chope("audiodevicein")
         .connect(c.chop("select", {channames: c.sp("chan1")}))
         .connect(c.chop("resample", {"timeslice": c.tp(false), "method": c.mp(0), "relative": c.mp(0), "end": c.fp(0.03)}))
-        .connect(c.chop("math", {"gain": g})),
+        .connect(c.chop("math", {"gain": g === undefined ? c.fp(1) : g})),
     aine: (v) => visuals(c).ain(v == undefined ? c.fp(1) : v),
     atex: (v) => c.top("chopto", {"chop": c.chopp([visuals(c).ain(v)])}),
     aspect: () => c.chope('audiodevicein').connect(c.chope('audiospectrum', {})),
