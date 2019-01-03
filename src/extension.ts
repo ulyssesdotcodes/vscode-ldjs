@@ -98,7 +98,7 @@ class LDJSBridge {
     run(obj: string) {
         let replaced = obj.replace(/\n/g, "\\n").replace(/"/g, "\\\'");
         obj = obj.replace("{CommandCode}", '`""' + replaced + '""`')
-        return Function("return (function(c, v, require) { return v((function() { " + obj + " })())})")()(ldjs, (n) => ldjs.validateNode(n).map(n => ldjs.nodeToJSON(n)), (v) => {
+        return Function("return (function(c, v, require) { return v((function() { " + obj + " })())})")()(ldjs, (ns) => ldjs.validateNodes(ns).map(n => ldjs.nodesToJSON(ns)), (v) => {
             let docuri = vscode.window.activeTextEditor.document.uri.path
             let path = docuri.substr(0, docuri.lastIndexOf('/') + 1) + v
             if(replcache.indexOf(path) == -1) {

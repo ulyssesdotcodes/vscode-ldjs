@@ -1,16 +1,29 @@
-let visuals = require('libs/visuals.ldjs.js');
-
-let i = 6;
-
-let vc = visuals(c)
+let visuals = require('libs/oscillare.ldjs.js')
 
 let clear = c.top("rectangle")
 
-let n = //vc.render(c.sope("sphere").connect(vc.geo()))
-//     vc.adata(c.fp(2))
-    vc.addops([
-    vc.adata(c.fp(2)).c(vc.val(c.modp(c.chan0(beatxramp(4, vc.mchop("b10").runT(), tapbeatm9)), c.fp(1))))
-    , vc.commandcode({CommandCode}),
-    ])
 
-return n.connect(c.tope("out")).out();
+let vc = visuals(c)
+
+let vol = visuals(c).vol(c.fp(2))
+  .connect(c.chop("lag", {lag2: c.fp(0)}))
+
+let sizex = c.chan(c.ip(0), vol)
+let sizey = c.modp(c.seconds, c.fp(0.2))
+let size = c.xyp(sizex, sizey)
+
+let audiotop = c.top("chopto", { 
+  chop: c.chopp([vc.ain(c.fp(0.9)).runT()]), 
+  resolutionw: c.ip(1920), 
+  resolutionh: c.ip(1080),
+  "outputresolution": c.mp(9),
+})
+
+let rect = c.top("rectangle", { size })
+
+let n = c.top("composite", { operand: c.mp(0) }).run([
+  audiotop.runT(),
+  rect.runT()
+])
+
+return [n.connect(c.top("out")).out()]
