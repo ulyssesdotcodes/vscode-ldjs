@@ -34,13 +34,14 @@
                 "title": "LDJS: Clear require cache"
             }
         ],
-        "keybindings": [{
-            "command": "extension.ldjsrun",
-            "key":"ctrl+enter",
-            "mac": "cmd+enter",
-            "when": "editortextfocus"
-
-        }],
+        "keybindings": [
+            {
+                "command": "extension.ldjsrun",
+                "key": "ctrl+enter",
+                "mac": "cmd+enter",
+                "when": "editortextfocus"
+            }
+        ],
         "configuration": {
             "type": "object",
             "title": "LDJS configuration",
@@ -73,7 +74,7 @@
     },
     "dependencies": {
         "fp-ts": "^1.11.2",
-        "lambdadesignerjs": "file:../lambdadesignerjs",
+        "lambda-designer-js": "1.0.0",
         "net": "^1.0.2"
     }
 }

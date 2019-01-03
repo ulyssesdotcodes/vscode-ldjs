@@ -2,7 +2,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import * as ldjs from 'lambdadesignerjs';
+import * as ldjs from 'lambda-designer-js';
 import * as net from 'net';
 import { Either, tryCatch, isLeft } from 'fp-ts/lib/Either';
 import { StrMap } from 'fp-ts/lib/StrMap';
