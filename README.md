@@ -20,7 +20,40 @@ LDJS: Start Server vscode command - automatic mode where every time text is chan
 
 ## Tutorial
 
-[Youtube tutorial](https://youtu.be/zcXJwsCvUyU)
+[YouTube tutorial](https://youtu.be/zcXJwsCvUyU)
+
+Using `c` (short for chain) gets you all of the needed operators.
+
+Op syntax is `c.opfamily("opname", { parameters })`
+
+For example: `c.top("rectangle", { rotate: c.fp(45) })`
+
+Parameter syntax is `c.paramtype(value)`
+
+For example `c.fp(45)`
+
+`fp: float`
+`ip: integer`
+`sp: string`
+`tp: toggle (bool)`
+`mp: menu (integer)`
+
+
+Multi-value parameter syntax is `c.paramtype(paramvalue1, paramvalue2, ...)`
+
+For example `c.xyp(c.fp(0.3), c.fp(0.6))`
+
+`xyp: float, float`
+`xyzp: float, float, float`
+`xyzwp: float, float, float, float`
+`rgbp: float, float, float`
+`whp: integer, integer`
+
+Some are not implemented yet.
+
+
+If your code errors or the nodes or parameters don't typecheck, check for messages in the ldjs output.
+
 
 ## Release Notes
 
