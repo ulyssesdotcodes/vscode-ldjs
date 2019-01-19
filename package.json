@@ -10,6 +10,7 @@
         "Other"
     ],
     "activationEvents": [
+        "onCommand:extension.ldjslookupparam",
         "onCommand:extension.ldjsstart",
         "onCommand:extension.ldjsrun",
         "onLanguage:js"
@@ -32,6 +33,10 @@
             {
                 "command": "extension.ldjsclearrequire",
                 "title": "LDJS: Clear require cache"
+            },
+            {
+                "command": "extension.ldjslookupparam",
+                "title": "LDJS: Lookup Param"
             }
         ],
         "keybindings": [
@@ -74,7 +79,7 @@
     },
     "dependencies": {
         "fp-ts": "^1.11.2",
-        "lambda-designer-js": "1.0.0",
+        "lambda-designer-js": "file:../lambdadesignerjs",
         "net": "^1.0.2"
     }
 }

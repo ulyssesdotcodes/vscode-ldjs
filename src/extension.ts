@@ -9,6 +9,7 @@ import { StrMap } from 'fp-ts/lib/StrMap';
 import { networkInterfaces } from 'os';
 import { option } from 'fp-ts/lib/Option';
 import { fstat } from 'fs';
+import * as parsedops from './parsedjs.json'
 
 let config = vscode.workspace.getConfiguration('ldjs')
 
@@ -97,7 +98,8 @@ class LDJSBridge {
 
     run(obj: string) {
         let replaced = obj.replace(/\n/g, "\\n").replace(/"/g, "\\\'");
-        obj = obj.replace("{CommandCode}", '`""' + replaced + '""`')
+        obj = obj.replace("CommandCode", '`""' + replaced + '""`')
+        console.log(obj)
         return Function("return (function(c, v, require) { return v((function() { " + obj + " })())})")()(ldjs, (ns) => ldjs.validateNodes(ns).map(n => ldjs.nodesToJSON(ns)), (v) => {
             let docuri = vscode.window.activeTextEditor.document.uri.path
             let path = docuri.substr(0, docuri.lastIndexOf('/') + 1) + v
@@ -183,11 +185,39 @@ export function activate(context: vscode.ExtensionContext) {
         replcache = []
     });
 
+    let lookupparam = vscode.commands.registerCommand('extension.ldjslookupparam', async () => {
+        let op = await vscode.window.showQuickPick(Object.keys(parsedops), {placeHolder: "Op"})
+        if (!op) return
+        let param = await vscode.window.showQuickPick(Object.keys(parsedops[op].pars), {placeHolder: "Op"})
+        if (!param) return
+
+        let replacement = param + ": "
+
+        if(parsedops[op].pars[param].type === "menu") {
+            let menuitems = parsedops[op].pars[param].menuitems
+            let menuitem = await vscode.window.showQuickPick(menuitems, {placeHolder: "Op"})
+            if(menuitem) replacement += "c.mp(" + menuitems.indexOf(menuitem) + "),"
+        }  else {
+            replacement += " ,"
+        }
+
+        let editor = vscode.window.activeTextEditor
+        editor.edit(edit => editor.selections.forEach(
+            (selection, idx) => {
+                edit.delete(selection);
+                let indent = editor.document.lineAt(selection.start.line > 0 ? selection.start.line - 1 : 0).firstNonWhitespaceCharacterIndex
+                replacement = new Array(indent + 1).join(" ") + replacement
+                edit.insert(selection.start, replacement);
+            })
+        )
+    });
+
     
     context.subscriptions.push(start);
     context.subscriptions.push(run);
     context.subscriptions.push(end);
     context.subscriptions.push(clearRequire);
+    context.subscriptions.push(lookupparam);
 }
 
 // this method is called when your extension is deactivated

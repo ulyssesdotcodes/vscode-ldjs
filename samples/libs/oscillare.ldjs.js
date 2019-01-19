@@ -34,10 +34,14 @@ const visuals = (c) => ({
     aspecttex: () => c.top("chopto", {"chop": c.chopp([visuals(c).aspect().out()])}),
     analyze: (i) => c.chop('analyze', {"function": c.mp(i)}),
     vol: (v) => visuals(c).ain(v).connect(visuals(c).analyze(6)),
+    vols: (v) => visuals(c).vol(v).connect(c.chop("speed")),
     volc: (v) => c.chan(c.ip(0), visuals(c).vol(v)),
+    volsc: (v) => c.chan(c.ip(0), visuals(c).vols(v)),
     lowPass: () => c.chop("audiofilter", {"filter": c.mp(0)}),
     lowv: (v) => visuals(c).ain(v).connect(visuals(c).lowPass()).connect(visuals(c).analyze(6)),
+    lowvs: (v) => visuals(c).lowv(v).connect(c.chop("speed")),
     lowvc: (v) => c.chan(c.ip(0), visuals(c).lowv(v)),
+    lowvsc: (v) => c.chan(c.ip(0), visuals(c).lowvs(v)),
     highPass: () => c.chop("audiofilter", {"filter": c.mp(1)}),
     highv: (v) => visuals(c).ain().connect(visuals(c).highPass()).connect(visuals(c).analyze(6)),
     highvc: (v) => c.chan(c.ip(0), visuals(c).highv()),
@@ -46,6 +50,10 @@ const visuals = (c) => ({
     bandvc: (b, v) => c.chan(c.ip(0), visuals(c).bandv(b)),
     mchan: (chan) => c.chan(c.sp(chan), c.chope("midiinmap")),
     mchop: (chan) => c.chope("midiinmap").connect(c.chop("select", {"channames": c.sp(chan)})),
+    cxyzp: (val) => c.xyzp(val, val, val),
+    lagdown: (val) => c.chop("lag", {lag2: val}),
+    lagup: (val) => c.chop("lag", {lag1: val}),
+    lagboth: (val) => c.chop("lag", {lag1: val, lag2: val}),
     frag: (fragname, uniforms) => c.top("glslmulti", Object.assign({
             "resolutionw": c.ip(1920), 
             "resolutionh": c.ip(1080),
@@ -54,8 +62,33 @@ const visuals = (c) => ({
             "format": c.mp(4) 
         }, zip([Array(8).fill("uniname"), Array.from(Array(8).keys()), Object.keys(uniforms)]).reduce((acc, v) => { acc[v[0]+v[1]] = c.sp(v[2]); return acc; }, {})
         , zip([Array(8).fill("value"), Array.from(Array(8).keys()), Object.values(uniforms)]).reduce((acc, v) => { acc[v[0]+v[1]] = v[2]; return acc; }, {}))),
+    sidebyside: (inputs) => 
+        c.top("glslmulti", {
+            pixeldat: c.datp([
+                c.dat("text", {
+                    "file" : c.sp("scripts/sidebyside.frag")
+                })]),
+            resolutionw: c.ip(inputs.length * 1920),
+            resolutionh: c.ip(1080),
+            outputresolution: c.mp(9)
+        }).run(inputs),
     adata: (v) => visuals(c).atex(v).connect(visuals(c).frag('audio_data.frag', {'i_volume': c.x4p(c.fp(1))})),
     noiset: (t) => c.top("noise", {"t": c.xyzp(c.fp(0), c.fp(0), t)}),
+    noisec: (t, amp) => c.chop("noise", {type: c.mp(3), "t": c.xyzp(c.fp(0), c.fp(0), t), amp: amp}),
+    noisecc: (t, amp) => c.chan(c.ip(0), visuals(c).noisec(t, amp)),
+    speed: (val) => c.chop("speed"),
+    timeslice: (off) => c.chop("trim", {
+        relative: c.mp(0), 
+        startunit: c.mp(2),
+        endunit: c.mp(2),
+        start: off,
+        end: off
+    }),
+    noisec: (t, amp) => c.chop("noise", {
+        type: c.mp(3), 
+        amp: amp,
+        right: c.mp(2)
+        }).c(visuals(c).timeslice(t)),
     lines: (spacing, width) => visuals(c).frag("lines.frag", {"i_spacing": c.x4p(spacing), "i_width": c.x4p(width)}),
     shapes: (sides, size, width) => visuals(c).frag("shapes.frag", {"i_size": c.x4p(size), "i_width": c.x4p(width), "i_sides": c.x4p(sides)}),
     stringtheory: (time, angle, angle_delta, xoffset) =>
@@ -92,9 +125,11 @@ const visuals = (c) => ({
     }, f)),
     scale: (xy) => visuals(c).transformscale({}, xy, xy, 1),
     rgbsplit: (s) => visuals(c).frag("rgbsplit.frag", {"uFrames": c.x4p(s)}),
-    repeatT: (x, y) => transformscale({}, x, y, 3),
+    repeatT: (x, y) => visuals(c).transformscale({}, x, y, 3),
+    repeatTxy: (xy)=> visuals(c).transformscale({}, xy, xy, 3),
     strobe: (s) => visuals(c).frag("strobe.frag", {"uSpeed": c.x4p(s), "uTime": c.x4p(c.seconds)}),
-
+    mirrorx: () => c.cc((inputs) => visuals(c).addops([inputs[0].c(c.top("flip", {flipx: c.tp(true)}))].concat(inputs))),
+    mirrory: () => c.cc((inputs) => visuals(c).addops([inputs[0].c(c.top("flip", {flipy: c.tp(true)}))].concat(inputs))),
     const1: (v) => c.chop("constant", {"name0": c.sp("const"), "value0": v}),
     constc: (namevals) => c.chop("constant", Object.entries(namevals).reduce(function(map, val, idx) {
         map["name" + idx] = c.sp(val[0])
@@ -102,8 +137,8 @@ const visuals = (c) => ({
         return map
     }, {})),
 
-    rgbc: (r, g, b) => visuals(c).constc({ r, g, b }),
-    palettergbc: (color) => rgbc(color.r / 255, color.g / 255, color.b / 255),
+    rgbc: (r, g, b) => visuals(c).constc({ r: r, g: g, b: b }),
+    palettergbc: (color) => visuals(c).rgbc(c.fp(color.r / 255), c.fp(color.g / 255), c.fp(color.b / 255)),
     rgbt: (color) => c.top("chopto", {"chop": c.chopp([visuals(c).palettergbc(color).runT()]), "dataformat": c.mp(2) }),
     palette: (colors) => 
         c.top("chopto", {
@@ -131,6 +166,7 @@ const visuals = (c) => ({
 
     tealcontrast:[rgb(188, 242, 246), rgb(50, 107, 113), rgb(211, 90, 30), rgb(209, 122, 43), rgb(188, 242, 246)],
     purplish:[rgb(150, 110, 100), rgb(223, 143, 67), rgb(76, 73, 100, ), rgb(146, 118, 133), rgb(165, 148, 180)],
+    bnw:[rgb(255, 255, 255), rgb(0, 0, 0)],
     sunset:[rgb(185, 117, 19), rgb(228, 187, 108), rgb(251, 162, 1), rgb(255, 243, 201)],
     coolpink:[rgb(215, 40, 26), rgb(157, 60, 121), rgb(179, 83, 154), rgb(187, 59, 98)],
     darkestred:[rgb(153, 7, 17), rgb(97, 6, 11), rgb(49, 7, 8), rgb(13, 7, 7), rgb(189, 5, 13)],
@@ -169,6 +205,10 @@ const visuals = (c) => ({
     littleplanet: () => visuals(c).frag("little_planet.frag", {}),
 
     triggerops: (f, inputs) => c.top("switch", {
+        "index": c.chan(c.ip(0), visuals(c).triggercount(inputs.length - 1, f))
+    }).run(inputs.map((i) => i.runT())),
+
+    triggerchops: (f, inputs) => c.chop("switch", {
         "index": c.chan(c.ip(0), visuals(c).triggercount(inputs.length - 1, f))
     }).run(inputs.map((i) => i.runT())),
 
@@ -270,25 +310,43 @@ const visuals = (c) => ({
     centerCam: (t, r) => c.comp("camera", {
         t: c.xyzp(c.fp(0), c.fp(0), t),
         p: c.xyzp(c.fp(0), c.fp(0), c.multp(c.fp(-1), t)),
-        r: r
+        r: r === undefined ? c.xyzp(c.fp(0), c.fp(0), c.fp(0)) : r
     }),
-    torusGeo: (sop, lightmap) => {
-        let s = c.chop("wave", {
-            end: c.fp(50), 
+    decaywave: (v) => 
+        c.chop("wave", {
+            wavetype: c.mp(1),
+            end: c.fp(32), 
             endunit: c.mp(1),
-            amp: c.fp(0.1),
-            phase: visuals(c).secs(c.fp(0.3)),
-            offset: c.fp(1),
+            amp: c.fp(0.11),
+            decay: c.fp(0.1),
+            decayunit: c.mp(1),
+            ramp: c.fp(0),
+            rampunit: c.mp(1),
+            period: c.fp(16),
+            periodunit: c.mp(1),
+            right: c.mp(0),
         })
+        .c(c.chop("trim", { start: c.fp(2) }))
+        .c(c.chop("math", { gain: c.fp(2) })),
+    movecircle: (off, off2) =>
+        visuals(c).constc({
+            tx: c.multp(c.sinp(off), c.cosp(off2)),
+            ty: c.multp(c.sinp(off), c.sinp(off2)),
+            tz: c.cosp(off)
+        }),
+    distfun: (outerc, fun) =>
+        c.chop("math", { chopop: c.mp(2) })
+            .run([outerc.runT(), fun.runT()])
+            .c(c.chop("function", {func: c.mp(19), expval: c.fp(2)}))
+            .c(c.chop("function", {func:c.mp(1)}))
+            .c(c.chop("math", {chanop: c.mp(1)})),
+    geoGeo: (instancesop, parentchop, scale, cam, lightmap)=> {
         let chop = 
             c.chop("merge").run([
-                c.chop("sopto", {
-                    sop: c.sopp([c.sop("torus", {
-                        rows: c.ip(5), 
-                        cols:c.ip(10)})])}).runT(),
-                s.c(c.chop("rename", {renameto: c.sp("sx")})).runT(),
-                s.c(c.chop("rename", {renameto: c.sp("sy")})).runT(),
-                s.c(c.chop("rename", {renameto: c.sp("sz")})).runT()
+                parentchop.runT(),
+                scale.c(c.chop("rename", {renameto: c.sp("sx")})).runT(),
+                scale.c(c.chop("rename", {renameto: c.sp("sy")})).runT(),
+                scale.c(c.chop("rename", {renameto: c.sp("sz")})).runT()
                 ])
 
         let metalic = c.mat("pbr", {
@@ -298,7 +356,7 @@ const visuals = (c) => ({
             // rim1color: c.rgbp(c.fp(1), c.fp(0), c.fp(0.55)),
         })
 
-        let sgeo = sop.connect(visuals(c).geo({
+        let sgeo = instancesop.connect(visuals(c).geo({
             material: c.matp([metalic]), 
             scale: c.fp(1),
             instanceop: c.chopp([chop]),
@@ -315,12 +373,26 @@ const visuals = (c) => ({
         }))
 
         return visuals(c).render([sgeo], 
-            [visuals(c).centerCam(c.fp(5), c.xyzp(c.fp(-30), visuals(c).secs(c.fp(30)), c.fp(0)))], 
+            [cam], 
             [c.comp("environmentlight", {
-                envlightmap: c.topp([lightmap]),
+                envlightmap: c.topp([lightmap.runT()]),
                 envlightmapprefilter: c.mp(0)
             })]
-        );
+        ).c(c.top("ssao"));
+    },
+    torusGeo: (sop, lightmap) => {
+        let s = c.chop("wave", {
+            end: c.fp(50), 
+            endunit: c.mp(1),
+            amp: c.fp(0.1),
+            phase: visuals(c).secs(c.fp(0.3)),
+            offset: c.fp(1),
+        })
+
+        let torus = c.chop("sopto", {sop: c.sopp([c.sop("torus", { rows: c.ip(5), cols:c.ip(10)}).runT()])})
+        let cam = visuals(c).centerCam(c.fp(5), c.xyzp(c.fp(-30), visuals(c).secs(c.fp(30)), c.fp(0)))
+
+        return visuals(c).geoGeo(sop, torus, s, cam, lightmap)
     },
     flocking: (cohesion, sep, sp) => 
         visuals(c).tox("toxes/Visuals/flockingGpu.tox",
@@ -330,9 +402,9 @@ const visuals = (c) => ({
             , Speed: sp
             }),
     sinct: (t, i, w) => c.cc((inputs) => 
-        vc.multops([
+        visuals(c).multops([
             c.top("chopto", {"chop": 
-                c.chopp([vc.sinC(i, t , w)])}).runT()
+                c.chopp([visuals(c).sinC(i, t, w)])}).runT()
         ].concat(inputs))),
     tapbeat: (input, g, reset) => {
         let beat = input.c(c.chop("logic", {preop: c.mp(5)})).runT()
@@ -369,28 +441,28 @@ const visuals = (c) => ({
 
     beatramp: (beat) => c.chop("speed", {resetcondition: c.mp(2)}).run([beat.bps, beat.beatpulse]),
     beatxcount: (x, reset, beat) => c.chop("count", { output: c.mp(1), limitmax: c.fp(x - 1) }).run([beat.beatpulse, reset]),
-    beatxpulse: (x, reset, beat) => beatxcount(x, reset, beat).c(c.chop("logic", { preop: c.mp(6) })),
+    beatxpulse: (x, reset, beat) => visuals(c).beatxcount(x, reset, beat).c(c.chop("logic", { preop: c.mp(6) })),
     beatxramp: (x, reset, beat) => 
         c.chop("speed").run([
                 beat.bps.c(c.chop("math", { gain: c.fp(1/x) })).runT(), 
-                beatxpulse(x, reset, beat).runT()
+                visuals(c).beatxpulse(x, reset, beat).runT()
         ]),
     beatseconds: (b, reset) => c.multp(c.seconds, c.chan0(b.bps)),
     tapbeatm9sec: () => visuals(c).beatseconds(visuals(c).tapbeatm9(), visuals(c).mchop("b10")),
     beatsecondschop: (b) => c.chop("speed").run([b.bps.runT()]),
-    dmxToChop: (dmx) => {
+    dmxtochop: (dmx) => {
         switch(dmx.type) {
             case 'GenericRGB':
-            return dmx.color
+                return dmx.color
             case '5Chan':
-            return c.chop("merge").run([
-                dmx.dim, dmx.color.r, dmx.color.g, dmx.color.b, 
-                visuals(c).const({ gen1: c.fp(0), gen2: c.fp(0) })
-            ])
+                return c.chop("merge").run([
+                    dmx.dim, dmx.color,
+                    visuals(c).constc({ gen1: c.fp(0), gen2: c.fp(0) })
+                ])
             case 'Fill':
-            return c.constc(new Array(dmx.numchans).fill(c.fp(0)))
+                return visuals(c).constc(Object.assign({}, new Array(dmx.num).fill(c.fp(0))))
             case 'FillVal':
-            return c.constc(new Array(dmx.numchans).fill(dmx.value))
+                return visuals(c).constc(Object.assign({}, new Array(dmx.num).fill(dmx.value)))
         }
     },
     genericrgbdmx: (color) => ({type: 'GenericRGB', color}),
@@ -398,36 +470,64 @@ const visuals = (c) => ({
     filldmx: (num) => ({type: 'Fill', num}),
     fillvaldmx: (num, value) => ({type: 'FillVal', num, value}),
     multchops: (chops) => c.chop("math", {chopop: c.mp(3)}).run(chops),
-    dimDmx: (gain, dmx) => {
+    dimdmx: (gain, dmx) => {
       switch(dmx.type){
         case 'GenericRGB':
-          return genericrgb(multchops([dmx.color, gain]))
+          return visuals(c).genericrgbdmx(visuals(c).multchops([dmx.color, gain]))
         case '5Chan':
-          return fivechan(multchops([dmx.dim, gain], dmx.color))
+          return visuals(c).fivechandmx(visuals(c).multchops([dmx.dim, gain], dmx.color))
         default:
           return dmx
       }
     },
-    dmxMapColor: (colorfunc, dmx) => {
+    dmxmapcolor: (colorfunc, dmx) => {
       switch(dmx.type){
         case 'GenericRGB':
-          return genericrgb(colorfunc(dmx.color))
+          return visuals(c).genericrgbdmx(colorfunc(dmx.color))
         case '5Chan':
-          return fivechan(dmx.dim, colorfunc(dmx.color))
+          return visuals(c).fivechandmx(dmx.dim, colorfunc(dmx.color))
         default:
           return dmx
       }
     },
+    palettergbcross: (palette, s) =>
+        c.chop("cross", {"cross": c.modp(s, c.fp(palette.length))}).run(palette.map((col) => visuals(c).palettergbc(col).runT())),
+
+    palettedmx: (dmx, palette, offset) => visuals(c).dmxmapcolor(color => visuals(c).palettergbcross(palette, offset), dmx),
+    palettedmxlist: (dmxes, palette, offset) => dmxes.map((d, idx) => visuals(c).palettedmx(d, palette, c.addp(offset, c.fp(idx / dmxes.length)))),
     senddmx: (dmxes) => 
-        c.chop("merge").run(dmxes.map(dmxToChop))
+        c.chop("merge").run(dmxes.map(visuals(c).dmxtochop))
             .c(c.chop('math', {torange2: c.fp(255)}))
             .c(c.chop('dmxout', {
             interface: c.mp(3), 
             rate: c.ip(40),
             netaddress: c.sp("10.7.224.159"),
             localaddress: c.sp("10.7.224.158"),
-            }))
-})
+            })),
+    pulse: (g, usb) => c.chop("datto", {
+        firstrow: c.mp(1),
+        firstcolumn: c.mp(2),
+        dat: c.datp([c.dat("serial", { 
+            port: c.sp(usb),
+            maxlines: c.ip(1)
+        }).runT()])})
+        .c(c.chop("math", {gain: g === undefined ? c.fp(1) : g})),
+
+    sensel: () => c.chop("cplusplus"),
+    senselchop: () => visuals(c).sensel().c(c.chop("select", {channames: c.sp("chan")})).c(c.chop("shuffle", { method: c.mp(8), nval: c.ip(185) })),
+    senseltop: (f = (n) => n) =>
+        c.top("chopto", { chop: c.chopp([f(visuals(c).senselchop())])})
+        .c(c.top("flip", {flipy: c.tp(true)}))
+        .c(c.top("resolution", {resolutionw: c.ip(1920), resolutionh: c.ip(1080), outputresolution: c.mp(9)}))
+        .c(c.top("reorder", {format: c.mp(26), outputalphachan: c.mp(0)})),
+    senseltouches: () => visuals(c).sensel().c(c.chop("select", {channames: c.sp("chan1")})).c(c.chop("delete", { delsamples: c.tp(true)})),
+    gesture: (mchan) => c.chop("gesture").run([
+        visuals(c).sensel()
+            .c(c.chop("select", { channames: c.sp("chan") }))
+            .c(c.chop("shuffle", { method: c.ip(1)})), 
+        vc.mchop(mchan)
+        ]).c(c.chop("shuffle", { method: c.mp(4), nval: c.ip(185), firstsample: c.tp(true)}))
+        })
 
 //export const rect = (c) => c.tope("rectangle")
 module.exports = visuals
