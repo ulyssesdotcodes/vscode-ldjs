@@ -67,7 +67,6 @@ let lightcode =
             .c(vc.val(c.fp(0)))
 ])
 
-let n = n2
 
 let dmxes = new Array(16).fill(vc.genericrgbdmx(vc.rgbc(vc.mchan("s2a"), vc.mchan("s2b"), vc.mchan("s2c"))))
 

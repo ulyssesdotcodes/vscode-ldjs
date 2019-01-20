@@ -66,8 +66,9 @@ def apply(newState):
     elif splits[1] == 'text':
       op(getName(splits[0])).text = diffi[2][1]
 
-    elif splits[1] == 'commands' and diffi[0] == 'add':
-      runCommand(getName(splits[0]), diffi[2][0][1]['command'], diffi[2][0][1]['args'])
+  for name in state:
+    for cmd in state[name]['commands']:
+      runCommand("lambda/" + name, cmd['command'], cmd['args'])
 
 
 def getName(name):
@@ -114,10 +115,10 @@ def addChange(key, value):
     for k,v in pars:
       addParameter(newOp, k, v)
 
-  if 'commands' in value:
-    coms = value['commands']
-    for comm in coms:
-      runCommand(addr, comm['command'], comm['args'])
+  # if 'commands' in value:
+  #   coms = value['commands']
+  #   for comm in coms:
+  #     runCommand(addr, comm['command'], comm['args'])
 
   if 'text' in value and value['text'] != None:
     newOp.text = value['text']

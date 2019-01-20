@@ -206,6 +206,7 @@ export function activate(context: vscode.ExtensionContext) {
             (selection, idx) => {
                 edit.delete(selection);
                 let indent = editor.document.lineAt(selection.start.line > 0 ? selection.start.line - 1 : 0).firstNonWhitespaceCharacterIndex
+                indent = editor.document.lineAt(selection.start.line).isEmptyOrWhitespace ? indent : 1
                 replacement = new Array(indent + 1).join(" ") + replacement
                 edit.insert(selection.start, replacement);
             })
