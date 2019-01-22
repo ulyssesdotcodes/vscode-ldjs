@@ -26,12 +26,9 @@ let outerc =
 let lightsdim = c.chop("wave", {
         period: c.multp(c.fp(10), vc.mchan("s2a")),
         wavetype: c.mp(6),
-
         offset: c.fp(1),
-        amp: c.fp(0.5)
+        amp: c.fp(0.5),
     }).c(c.chop("timeslice"))
-
-
 
 let n1 = vc.shapes(c.fp(3), c.fp(0.1), c.fp(0.2)).c(vc.repeatTxy(c.fp(20)))
 let n2 = 
@@ -46,7 +43,6 @@ let n2 =
     //         .c(c.top("blur", {size: c.ip(16)}))
     // ])
     //     .c(vc.fade(c.fp(0.97)))
-
 let lightcode = 
     vc.addops([
         vc.commandcode(CommandCode),

@@ -99,7 +99,6 @@ class LDJSBridge {
     run(obj: string) {
         let replaced = obj.replace(/\n/g, "\\n").replace(/"/g, "\\\'");
         obj = obj.replace("CommandCode", '`""' + replaced + '""`')
-        console.log(obj)
         return Function("return (function(c, v, require) { return v((function() { " + obj + " })())})")()(ldjs, (ns) => ldjs.validateNodes(ns).map(n => ldjs.nodesToJSON(ns)), (v) => {
             let docuri = vscode.window.activeTextEditor.document.uri.path
             let path = docuri.substr(0, docuri.lastIndexOf('/') + 1) + v
@@ -136,7 +135,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Use the console to output diagnostic information (console.log) and errors (console.error)
     // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "vscode-ldjs" is now active!');
+    console.log('Activated ldjs');
     var bridge = undefined;
 
     // The command has been defined in the package.json file
@@ -213,12 +212,30 @@ export function activate(context: vscode.ExtensionContext) {
         )
     });
 
+    let completeitem = { label: "Completion", insertText: 'hi!' }
+
+    let completionprovider = {
+        provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext): vscode.ProviderResult<vscode.CompletionItem[] | vscode.CompletionList>{
+            let range = document.getWordRangeAtPosition(position, /(top|chop|dat|comp|sop)\(\"\"\)/)
+            let text = document.getText(range)
+            let type = text.substr(0, text.indexOf('('))
+            let completions =
+                Object.keys(parsedops)
+                    .filter(op => op.includes(type.toUpperCase()))
+                    .map(op => op.substring(0, op.length - type.length))
+                    .map(op => ({ label: op, insertText: op }))
+            return completions
+        }
+    }
+
+    let completionitemprovider = vscode.languages.registerCompletionItemProvider({ scheme: 'file', pattern: '**/*.ldjs.js' }, completionprovider, '"')
     
     context.subscriptions.push(start);
     context.subscriptions.push(run);
     context.subscriptions.push(end);
     context.subscriptions.push(clearRequire);
     context.subscriptions.push(lookupparam);
+    context.subscriptions.push(completionitemprovider);
 }
 
 // this method is called when your extension is deactivated

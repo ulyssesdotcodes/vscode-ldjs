@@ -13,7 +13,7 @@
         "onCommand:extension.ldjslookupparam",
         "onCommand:extension.ldjsstart",
         "onCommand:extension.ldjsrun",
-        "onLanguage:js"
+        "onLanguage:javascript"
     ],
     "main": "./out/extension",
     "contributes": {
