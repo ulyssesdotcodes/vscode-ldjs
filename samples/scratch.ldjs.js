@@ -12,7 +12,9 @@ let outer = c.sop("torus", {
 })
     // .c(c.sop("transform", {s: vc.cxyzp(c.chan0(vc.lowv().c(vc.lagdown(c.fp(0.2)))))}))
 
-let scale = c.chop("math", {chopop: c.mp(3)}).run([vc.sinC(c.fp(1024), c.fp(0.5), c.fp(1)), vc.const1(c.fp(0.05))])
+let scale = c.chop("math",{chopop: c.mp(3), 
+
+}).run([vc.sinC(c.fp(1024), c.fp(0.5), c.fp(1)), vc.const1(c.fp(0.05))])
 // c.chop("wave", {amp: c.fp(0.1), })
 
 let cam = visuals(c).centerCam(c.fp(5), c.xyzp(c.fp(-30), visuals(c).secs(c.fp(30)), c.fp(0)))

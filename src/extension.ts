@@ -185,8 +185,21 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     let lookupparam = vscode.commands.registerCommand('extension.ldjslookupparam', async () => {
-        let op = await vscode.window.showQuickPick(Object.keys(parsedops), {placeHolder: "Op"})
+        let editor = vscode.window.activeTextEditor;
+        let linenum = editor.selection.start.line;
+        let op = undefined;
+        while (linenum > 0 && (op == null || op == undefined)) {
+            console.log(op)
+            let line = editor.document.lineAt(linenum);
+            console.log("finding...")
+            let matches = /(top|chop|dat|comp|sop)\(\"([a-z]*)\"/.exec(line.text)
+            op = matches && matches.length == 3 ? matches[2] + matches[1].toUpperCase() : op
+            linenum -= 1;
+        }
+
+        if(op === undefined) op = await vscode.window.showQuickPick(Object.keys(parsedops), {placeHolder: "Op"})
         if (!op) return
+
         let param = await vscode.window.showQuickPick(Object.keys(parsedops[op].pars), {placeHolder: "Op"})
         if (!param) return
 
@@ -200,7 +213,6 @@ export function activate(context: vscode.ExtensionContext) {
             replacement += " ,"
         }
 
-        let editor = vscode.window.activeTextEditor
         editor.edit(edit => editor.selections.forEach(
             (selection, idx) => {
                 edit.delete(selection);
@@ -212,9 +224,7 @@ export function activate(context: vscode.ExtensionContext) {
         )
     });
 
-    let completeitem = { label: "Completion", insertText: 'hi!' }
-
-    let completionprovider = {
+    let opCompletionProvider = {
         provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext): vscode.ProviderResult<vscode.CompletionItem[] | vscode.CompletionList>{
             let range = document.getWordRangeAtPosition(position, /(top|chop|dat|comp|sop)\(\"\"\)/)
             let text = document.getText(range)
@@ -228,14 +238,14 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }
 
-    let completionitemprovider = vscode.languages.registerCompletionItemProvider({ scheme: 'file', pattern: '**/*.ldjs.js' }, completionprovider, '"')
+    let opCompletionProviderDisposable = vscode.languages.registerCompletionItemProvider({ scheme: 'file', pattern: '**/*.ldjs.js' }, opCompletionProvider, '"')
     
     context.subscriptions.push(start);
     context.subscriptions.push(run);
     context.subscriptions.push(end);
     context.subscriptions.push(clearRequire);
     context.subscriptions.push(lookupparam);
-    context.subscriptions.push(completionitemprovider);
+    context.subscriptions.push(opCompletionProviderDisposable);
 }
 
 // this method is called when your extension is deactivated
