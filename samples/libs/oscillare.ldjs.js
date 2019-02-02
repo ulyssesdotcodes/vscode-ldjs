@@ -225,8 +225,38 @@ const visuals = (c) => ({
     tox: (tox, params) => c.comp("base", Object.assign({externaltox: c.sp(tox)}, params)),
     render: (g, cam, light) => c.top("render", {
         "lights": light === undefined ? c.compp([c.compe("light")]) : c.compp(light),
-        "geometry": c.compp(g),
-        "camera": cam === undefined ? c.compp([c.compe("camera")]) : c.compp(cam)
+        "eeometry": c.compp(g),
+        "camera": cam === undefined ? c.compp([c.compe("camera")]) : c.compp(cam),
+        resolutionw: c.ip(1920),
+        resolutionh: c.ip(1080)
+    }),
+    renderEasy: (sop, instances, geoparams) => c.top("render", {
+        "lights": c.compp([c.compe("light", { lighttype: c.mp(2) })]),
+        "geometry": c.compp([
+            sop.connect(c.comp("geometry", Object.assign({
+                externaltox: c.sp("toxes/Visuals/geo.tox"),
+                material: c.matp([c.mat("pbr", {
+                    roughness: c.fp(0.2), 
+                    metallic: c.fp(0.5),
+                    rim1enable: c.tp(true),
+                    rim1color: c.rgbp(c.fp(1), c.fp(0), c.fp(0.55)),
+                })]),
+                instanceop: c.chopp([instances]),
+                instancing: c.tp(true),
+                instancetx: c.sp("tx"),
+                instancety: c.sp("ty"),
+                instancetz: c.sp("tz"),
+                instancerx: c.sp("rx"),
+                instancery: c.sp("ry"),
+                instancerz: c.sp("rz"),
+                instancesx: c.sp("sx"),
+                instancesy: c.sp("sy"),
+                instancesz: c.sp("sz"),
+            }, geoparams))),
+        ]),
+        "camera": c.compp([c.compe("camera")]),
+        resolutionw: c.ip(1920),
+        resolutionh: c.ip(1080)
     }),
     sinC: (i, phase, off) => 
         c.chop("wave", {
@@ -250,7 +280,7 @@ const visuals = (c) => ({
         columns: sides,
         radius: c.xyp(scale, c.multp(scale, c.fp(0.5)))
     }),
-    lineGeo: (ty, rz, sx, sy, sop, width, instances, mat) => {
+    line: (ty, rz, sx, sy, sop, width, instances, mat) => {
         let tx = c.chop("wave", {
             channelname: c.sp("tx"), 
             end: instances,
@@ -300,7 +330,9 @@ const visuals = (c) => ({
                     method: c.mp(0), 
                     end: instances, 
                     endunit: c.mp(1),
-                    timeslice: c.tp(false)
+                    timeslice: c.tp(false),
+                    relative: c.mp(0),
+                    method: c.mp(3),
                 })),
             visuals(c).sinC(instances, c.fp(0), c.fp(0)),
             visuals(c).scaleC(instances, c.fp(10)),
@@ -437,7 +469,7 @@ const visuals = (c) => ({
                     convert: c.mp(2)}))
         return {beatpulse: finalbeat, bps: bps}
         },
-    tapbeatm9: () => visuals(c).tapbeat(visuals(c).mchop("b9"), (c.powp(c.fp(2), (c.floorp(c.multp(c.subp(visuals(c).mchan("s1a"), c.fp(0.5)), c.fp(4)))))), visuals(c).mchop("b10")),
+    tapbeatm9: () => visuals(c).tapbeat(visuals(c).mchop("b9"), (c.powp(c.fp(2), (visuals(c).floor(c.multp(c.subp(visuals(c).mchan("s1a"), c.fp(0.5)), c.fp(4)))))), visuals(c).mchop("b10")),
 
     beatramp: (beat) => c.chop("speed", {resetcondition: c.mp(2)}).run([beat.bps, beat.beatpulse]),
     beatxcount: (x, reset, beat) => c.chop("count", { output: c.mp(1), limitmax: c.fp(x - 1) }).run([beat.beatpulse, reset]),
@@ -522,12 +554,21 @@ const visuals = (c) => ({
         .c(c.top("reorder", {format: c.mp(26), outputalphachan: c.mp(0)})),
     senseltouches: () => visuals(c).sensel().c(c.chop("select", {channames: c.sp("chan1")})).c(c.chop("delete", { delsamples: c.tp(true)})),
     gesture: (mchan) => c.chop("gesture").run([
-        visuals(c).sensel()
-            .c(c.chop("select", { channames: c.sp("chan") }))
-            .c(c.chop("shuffle", { method: c.ip(1)})), 
-        vc.mchop(mchan)
-        ]).c(c.chop("shuffle", { method: c.mp(4), nval: c.ip(185), firstsample: c.tp(true)}))
-        })
+            visuals(c).sensel()
+                .c(c.chop("select", { channames: c.sp("chan") }))
+                .c(c.chop("shuffle", { method: c.mp(1)})), 
+            visuals(c).mchop(mchan)
+        ]).c(c.chop("shuffle", { 
+            method: c.mp(4), 
+            nval: c.ip(185), 
+            firstsample: c.tp(true)
+        })),
+    gesturetop: (chop) =>
+        c.top("chopto", { chop: c.chopp([chop])})
+            .c(c.top("flip", {flipy: c.tp(true)}))
+            .c(c.top("resolution", {resolutionw: c.ip(1920), resolutionh: c.ip(1080), outputresolution: c.mp(9)}))
+            .c(c.top("reorder", {format: c.mp(26), outputalphachan: c.mp(0)})),
+    })
 
 //export const rect = (c) => c.tope("rectangle")
 module.exports = visuals

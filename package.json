@@ -2,6 +2,7 @@
     "name": "vscode-ldjs",
     "displayName": "vscode-ldjs",
     "description": "vscode adapter for ldjs",
+    "publisher": "Ulysses Popple",
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.29.0"
@@ -79,7 +80,7 @@
     },
     "dependencies": {
         "fp-ts": "^1.11.2",
-        "lambda-designer-js": "file:../lambdadesignerjs",
+        "lambda-designer-js": "1.0.5",
         "net": "^1.0.2"
     }
 }
