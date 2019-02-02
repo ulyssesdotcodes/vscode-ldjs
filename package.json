@@ -2,7 +2,8 @@
     "name": "vscode-ldjs",
     "displayName": "vscode-ldjs",
     "description": "vscode adapter for ldjs",
-    "publisher": "Ulysses Popple",
+    "publisher": "ulyssesp",
+    "repository": {"type": "git", "url": "https://github.com/ulyssesp/vscode-ldjs"},
     "version": "0.0.1",
     "engines": {
         "vscode": "^1.29.0"

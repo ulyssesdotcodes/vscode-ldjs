@@ -50,9 +50,9 @@ let instanceainy =
 //         scale: volumechan,
 //     }))
 
-let render = vc.renderEasy(geometry, instances, {
-    r: c.xyzp(c.fp(0), c.fp(0), c.multp(c.chan0(volspeed), c.fp(100)))
-})
+// let render = vc.renderEasy(geometry, instances, {
+//     r: c.xyzp(c.fp(0), c.fp(0), c.multp(c.chan0(volspeed), c.fp(100)))
+// })
 
 let instances = c.chop("constant", {value0: c.fp(1)})
 

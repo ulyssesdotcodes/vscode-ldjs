@@ -14,6 +14,22 @@ LDJS: Start Server vscode command - automatic mode where every time text is chan
 
 ## Setup
 
+Marketplace:
+
+1. Install vscode-ldjs
+2. Create a new directory and create scratch.ldjs.js with the following content:
+```
+let n = c.top("rectangle")
+return [n.c(c.top("out")).out()]
+```
+3. In terminal, run (replacing 0.0.1 with ldjs version)
+```
+$ open ~/.vscode/extensions/ulyssesp.ldjs-0.0.1/TD/FunctionalDesigner.toe
+```
+4. Press ctrl/cmd + enter
+
+Local:
+
 1. Clone this repo (it's not on vscode extension marketplace for a reason)
 2. Add it as a local extension - you can use a symlink - with [these instructions](https://vscode-docs.readthedocs.io/en/stable/extensions/install-extension/)
 3. Open TD/FunctionalDesigner.toe
