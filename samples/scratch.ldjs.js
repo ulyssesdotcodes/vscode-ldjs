@@ -11,6 +11,7 @@ let audioin = c.chop("audiodevicein")
 
 let instanceNum = 32
 
+
 let instanceainy =
     audioin.c(c.chop("resample", {
         method: c.mp(0),

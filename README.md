@@ -26,7 +26,8 @@ return [n.c(c.top("out")).out()]
 ```
 $ open ~/.vscode/extensions/ulyssesp.ldjs-0.0.1/TD/FunctionalDesigner.toe
 ```
-4. Press ctrl/cmd + enter
+4. Press ctrl/cmd + enter to start the extension server
+5. Add a line somewhere and press ctrl/cmd + again
 
 Local:
 
@@ -34,9 +35,13 @@ Local:
 2. Add it as a local extension - you can use a symlink - with [these instructions](https://vscode-docs.readthedocs.io/en/stable/extensions/install-extension/)
 3. Open TD/FunctionalDesigner.toe
 
+## Examples 
+
+In the samples folder, [oscillare.ldjs.js](https://github.com/ulyssesp/vscode-ldjs/blob/master/samples/libs/oscillare.ldjs.js) had a bunch of premade functions, and [scratch.ldjs.js](https://github.com/ulyssesp/vscode-ldjs/blob/master/samples/oscillare.ldjs.js) has the latest that I've been working on.
+
 ## Tutorial
 
-[YouTube tutorial](https://youtu.be/zcXJwsCvUyU)
+[YouTube tutorial](https://youtu.be/zcXJwsCvUyU) (requires a local version of [oscillare.ldjs.js](https://github.com/ulyssesp/vscode-ldjs/blob/master/samples/libs/oscillare.ldjs.js))
 
 Using `c` (short for chain) gets you all of the needed operators.
 
