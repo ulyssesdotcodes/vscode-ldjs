@@ -28,22 +28,22 @@ let instanceainy =
     }))
 
 
-// let instancesx = c.chop("wave", {
-//     wavetype: c.mp(4),
-//     end: c.fp(instanceNum),
-//     endunit: c.mp(1),
-//     amp: c.fp(7),
-//     offset: c.fp(-0.26) , 
-// })
-//     .c(c.chop("rename", {
-//         renameto: c.sp("tx")
-//     }))
+let instancesx = c.chop("wave", {
+    wavetype: c.mp(4),
+    end: c.fp(instanceNum),
+    endunit: c.mp(1),
+    amp: c.fp(7),
+    offset: c.fp(-0.26) , 
+})
+    .c(c.chop("rename", {
+        renameto: c.sp("tx")
+    }))
 
 
 // let lagvol = volume.c(c.chop("lag", { lag1: c.fp(0.4) }))
 // let volumechan = c.chan0(lagvol)
 
-// let instances = c.chop("merge").run([instanceainy, instancesx])
+let instances = c.chop("merge").run([instanceainy, instancesx])
 
 // let geometry = c.sop("sphere")
 //     .c(c.sop("transform", {
@@ -54,13 +54,17 @@ let instanceainy =
 //     r: c.xyzp(c.fp(0), c.fp(0), c.multp(c.chan0(volspeed), c.fp(100)))
 // })
 
-let instances = c.chop("constant", {value0: c.fp(1)})
+// let instances = c.chop("constant", {value0: c.fp(1)})
 
 let geometry = c.sop("sphere")
 
 let render = vc.renderEasy(geometry, instances, {})
+ 
+let n = vc.sidebyside([c.top("videodevicein"), c.top("videodevicein", {
+    device: c.sp("V1|||0x8020000005ac8514|||1|||0|||FaceTime HD Camera")
+})])
 
-let n = render
+n = render
 
 
 return [n.connect(c.top("out")).out()]
