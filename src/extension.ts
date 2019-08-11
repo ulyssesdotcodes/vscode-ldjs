@@ -4,13 +4,8 @@
 import * as vscode from 'vscode';
 import * as ldjs from 'lambda-designer-js';
 import * as net from 'net';
-import * as fsPath from 'fs-path';
 import * as path from 'path';
 import { Either, tryCatch, isLeft } from 'fp-ts/lib/Either';
-import { StrMap } from 'fp-ts/lib/StrMap';
-import { networkInterfaces } from 'os';
-import { option } from 'fp-ts/lib/Option';
-import { fstat } from 'fs';
 import * as parsedops from './parsedjs.json'
 
 let config = vscode.workspace.getConfiguration('ldjs')

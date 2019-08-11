@@ -84,7 +84,6 @@
     },
     "dependencies": {
         "fp-ts": "^1.11.2",
-        "fs-path": "0.0.24",
         "lambda-designer-js": "1.0.5",
         "net": "^1.0.2"
     }
