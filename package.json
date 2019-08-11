@@ -77,14 +77,14 @@
         "test": "npm run compile && node ./node_modules/vscode/bin/test"
     },
     "devDependencies": {
-        "typescript": "^3.1.6",
-        "vscode": "^1.1.22",
-        "@types/node": "^8.10.25",
-        "@types/mocha": "^2.2.42"
+        "@types/mocha": "^2.2.42",
+        "@types/node": "^8.10.51",
+        "typescript": "^3.5.3",
+        "vscode": "^1.1.36"
     },
     "dependencies": {
-        "fp-ts": "^1.11.2",
-        "lambda-designer-js": "1.0.5",
+        "fp-ts": "^1.19.5",
+        "lambda-designer-js": "1.0.17",
         "net": "^1.0.2"
     }
 }
