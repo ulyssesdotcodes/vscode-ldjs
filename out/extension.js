@@ -13,6 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const ldjs = require("lambda-designer-js");
 const net = require("net");
+const path = require("path");
 const Either_1 = require("fp-ts/lib/Either");
 const parsedops = require("./parsedjs.json");
 let config = vscode.workspace.getConfiguration('ldjs');
@@ -91,12 +92,16 @@ class LDJSBridge {
         let replaced = obj.replace(/\n/g, "\\n").replace(/"/g, "\\\'");
         obj = obj.replace("CommandCode", '`""' + replaced + '""`');
         return Function("return (function(c, v, require) { return v((function() { " + obj + " })())})")()(ldjs, (ns) => ldjs.validateNodes(ns).map(n => ldjs.nodesToJSON(ns)), (v) => {
-            let docuri = vscode.window.activeTextEditor.document.uri.path;
-            let path = docuri.substr(0, docuri.lastIndexOf('/') + 1) + v;
-            if (replcache.indexOf(path) == -1) {
-                replcache.push(path);
+            let docuri = vscode.window.activeTextEditor.document.uri.fsPath;
+            console.log(docuri);
+            let lastIndex = docuri.lastIndexOf('/');
+            lastIndex = lastIndex == -1 ? docuri.lastIndexOf('\\') : lastIndex;
+            let docpath = path.normalize(docuri.substr(0, lastIndex + 1) + v);
+            console.log(docpath);
+            if (replcache.indexOf(docpath) == -1) {
+                replcache.push(docpath);
             }
-            return require(path);
+            return require(docpath);
         });
     }
     runForStatus(text) {

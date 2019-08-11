@@ -117,6 +117,10 @@ const visuals = (c) => ({
     rotate: (r) => visuals(c).transform({"rotate": r}),
     translate: (x, y) => visuals(c).transform({"t": c.xyp(x, y), "extend": c.mp(3)}),
     translatex: (x) => visuals(c).translate(x, c.fp(0)),
+    translatexclamp: (t, clamp) => c.top("transform", {
+        t: c.xyp(c.multp(visuals(c).floor(c.divp(c.modp(t, c.fp(1)), clamp)), clamp), c.fp(0)),
+        extend: c.mp(2),
+    }),
     translatey: (y) => visuals(c).translate(c.fp(0), y),
     val: (v) => c.top("hsvadjust", {"valuemult": v}),
     transformscale: (f, x, y, e) => visuals(c).transform(Object.assign({
@@ -212,11 +216,13 @@ const visuals = (c) => ({
         "index": c.chan(c.ip(0), visuals(c).triggercount(inputs.length - 1, f))
     }).run(inputs.map((i) => i.runT())),
 
-    fade: (opacity) => c.cc((inputs) => 
+    fade: (opacity, midops = c.cc((inputs) => inputs[0])) => c.cc((inputs) => 
         c.feedbackChain(c.cc((fbinputs) => 
             c.top("composite", {"operand": c.mp(0)})
                 .run(inputs.concat([
-                    c.top("level", {"opacity": opacity}).run(fbinputs)
+                    c.top("level", {"opacity": opacity})
+                    .c(midops)
+                    .run(fbinputs)
                 ])))).run(inputs)),
     secs: (m) => c.multp(c.seconds, m),
     floor: (f) => c.funcp("math.floor")(f),
@@ -225,7 +231,7 @@ const visuals = (c) => ({
     tox: (tox, params) => c.comp("base", Object.assign({externaltox: c.sp(tox)}, params)),
     render: (g, cam, light) => c.top("render", {
         "lights": light === undefined ? c.compp([c.compe("light")]) : c.compp(light),
-        "eeometry": c.compp(g),
+        "geometry": c.compp(g),
         "camera": cam === undefined ? c.compp([c.compe("camera")]) : c.compp(cam),
         resolutionw: c.ip(1920),
         resolutionh: c.ip(1080)
@@ -568,6 +574,7 @@ const visuals = (c) => ({
             .c(c.top("flip", {flipy: c.tp(true)}))
             .c(c.top("resolution", {resolutionw: c.ip(1920), resolutionh: c.ip(1080), outputresolution: c.mp(9)}))
             .c(c.top("reorder", {format: c.mp(26), outputalphachan: c.mp(0)})),
+    runop: (op, opp) => c.cc((inputs) => op.run(inputs.concat([opp])))
     })
 
 //export const rect = (c) => c.tope("rectangle")

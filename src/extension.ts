@@ -4,6 +4,8 @@
 import * as vscode from 'vscode';
 import * as ldjs from 'lambda-designer-js';
 import * as net from 'net';
+import * as fsPath from 'fs-path';
+import * as path from 'path';
 import { Either, tryCatch, isLeft } from 'fp-ts/lib/Either';
 import { StrMap } from 'fp-ts/lib/StrMap';
 import { networkInterfaces } from 'os';
@@ -100,12 +102,14 @@ class LDJSBridge {
         let replaced = obj.replace(/\n/g, "\\n").replace(/"/g, "\\\'");
         obj = obj.replace("CommandCode", '`""' + replaced + '""`')
         return Function("return (function(c, v, require) { return v((function() { " + obj + " })())})")()(ldjs, (ns) => ldjs.validateNodes(ns).map(n => ldjs.nodesToJSON(ns)), (v) => {
-            let docuri = vscode.window.activeTextEditor.document.uri.path
-            let path = docuri.substr(0, docuri.lastIndexOf('/') + 1) + v
-            if(replcache.indexOf(path) == -1) {
-                replcache.push(path);
+            let docuri = vscode.window.activeTextEditor.document.uri.fsPath
+            let lastIndex = docuri.lastIndexOf('/')
+            lastIndex = lastIndex == -1 ? docuri.lastIndexOf('\\') : lastIndex;
+            let docpath = path.normalize(docuri.substr(0, lastIndex + 1) + v)
+            if(replcache.indexOf(docpath) == -1) {
+                replcache.push(docpath);
             }
-            return require(path);
+            return require(docpath);
         })
     }
 
