@@ -4,9 +4,9 @@
 import * as vscode from 'vscode';
 import * as ldjs from 'lambda-designer-js';
 import * as net from 'net';
-import * as path from 'path';
-import { Either, tryCatch, isLeft } from 'fp-ts/lib/Either';
 import * as parsedops from './parsedjs.json'
+import { taskEither, either, task } from 'fp-ts'
+import { pipe } from 'fp-ts/lib/pipeable';
 
 let config = vscode.workspace.getConfiguration('ldjs')
 
@@ -83,43 +83,50 @@ class LDJSBridge {
         this._outputChannel.show();
     }
 
-    public update(){
+    public async update(){
         if(vscode.window.activeTextEditor.document.uri.fsPath !== this.fileUri.fsPath) { return; }
         let text = vscode.window.activeTextEditor.document.getText();
         if(text != this.lastText) {
             this.lastText = text;
             this._outputChannel.clear()
-            this.runForStatus(text).slice(0, 8).map(l => this._outputChannel.appendLine(l))
+            let status = await this.runForStatus(text)()
+            this._outputChannel.appendLine(status)
         }
     }
 
-    run(obj: string) {
+    run: (obj: string) => Promise<either.Either<string, string>> = (obj) => {
         let replaced = obj.replace(/\n/g, "\\n").replace(/"/g, "\\\'");
         obj = obj.replace("CommandCode", '`""' + replaced + '""`')
-        return Function("return (function(c, v, require) { return v((function() { " + obj + " })())})")()(ldjs, (ns) => ldjs.validateNodes(ns).map(n => ldjs.nodesToJSON(ns)), (v) => {
-            let docuri = vscode.window.activeTextEditor.document.uri.fsPath
-            let lastIndex = docuri.lastIndexOf('/')
-            lastIndex = lastIndex == -1 ? docuri.lastIndexOf('\\') : lastIndex;
-            let docpath = path.normalize(docuri.substr(0, lastIndex + 1) + v)
-            if(replcache.indexOf(docpath) == -1) {
-                replcache.push(docpath);
-            }
-            return require(docpath);
-        })
+        return Function("c", "v", "require", "return Promise.resolve((function() { " + obj + " })()).then(v)")(
+            ldjs, 
+            (ns) => pipe(
+                ns,
+                ldjs.validateNodes,
+                either.map(n => ldjs.nodesToJSON(ns))),
+            (v) => {
+                let docuri = vscode.window.activeTextEditor.document.uri.path
+                let path = docuri.substr(0, docuri.lastIndexOf('/') + 1) + v
+                if(replcache.indexOf(path) == -1) {
+                    replcache.push(path);
+                }
+                return require(path);
+            })
     }
 
     runForStatus(text) {
-        let result: Either<string[], string> = tryCatch<Either<string[], string>>(() => {
-            return this.run(text) as Either<string[], string>
-        }).mapLeft(e => {
-            return [e.message].concat(e.stack.split('\n'))
-        }).chain(r => r)
-        if(result.isRight()) {
-            this.socket.send(result.value);
-            return ["Correct"];
-        } else {
-            return result.value;
-        }
+        return pipe(
+                taskEither.tryCatch(() => this.run(text), (e: any) => [e.message].concat(e.stack.split('\n')).join("\n")),
+                task.map(either.flatten),
+                taskEither.chain(r => taskEither.tryCatch(() => Promise.resolve(this.socket.send(r)), e => "Problem sending")),
+                taskEither.fold(e => task.of(e), () => task.of("Correct"))
+            )
+
+        // if(result.isRight()) {
+        //     this.socket.send(result.value);
+        //     return ["Correct"];
+        // } else {
+        //     return result.value;
+        // }
     }
 
     dispose() {

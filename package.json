@@ -7,7 +7,7 @@
         "type": "git",
         "url": "https://github.com/ulyssesp/vscode-ldjs"
     },
-    "version": "0.1.2",
+    "version": "0.1.3",
     "engines": {
         "vscode": "^1.29.0"
     },
@@ -83,8 +83,8 @@
         "vscode": "^1.1.36"
     },
     "dependencies": {
-        "fp-ts": "^1.19.5",
-        "lambda-designer-js": "1.0.17",
+        "fp-ts": "2.0.5",
+        "lambda-designer-js": "1.0.19",
         "net": "^1.0.2"
     }
 }

@@ -26,12 +26,12 @@ return [n.c(c.top("out")).out()]
 ```
 $ open ~/.vscode/extensions/ulyssesp.ldjs-0.0.1/TD/FunctionalDesigner.toe
 ```
-4. Press ctrl/cmd + enter to start the extension server
+4. Press ctrl/cmd + enter to start the extension
 5. Add a line somewhere and press ctrl/cmd + again
 
 Local:
 
-1. Clone this repo (it's not on vscode extension marketplace for a reason)
+1. Clone this repo 
 2. Add it as a local extension - you can use a symlink - with [these instructions](https://vscode-docs.readthedocs.io/en/stable/extensions/install-extension/)
 3. Open TD/FunctionalDesigner.toe
 

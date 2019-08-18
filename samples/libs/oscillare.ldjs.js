@@ -74,8 +74,7 @@ const visuals = (c) => ({
         }).run(inputs),
     adata: (v) => visuals(c).atex(v).connect(visuals(c).frag('audio_data.frag', {'i_volume': c.x4p(c.fp(1))})),
     noiset: (t) => c.top("noise", {"t": c.xyzp(c.fp(0), c.fp(0), t)}),
-    noisec: (t, amp) => c.chop("noise", {type: c.mp(3), "t": c.xyzp(c.fp(0), c.fp(0), t), amp: amp}),
-    noisecc: (t, amp) => c.chan(c.ip(0), visuals(c).noisec(t, amp)),
+    noisecc: (t, amp, channames) => c.chan(c.ip(0), visuals(c).noisec(t, amp, channames)),
     speed: (val) => c.chop("speed"),
     timeslice: (off) => c.chop("trim", {
         relative: c.mp(0), 
@@ -84,11 +83,24 @@ const visuals = (c) => ({
         start: off,
         end: off
     }),
-    noisec: (t, amp) => c.chop("noise", {
+    noisec: (t, amp, channames, seed = c.fp(0)) => c.chop("noise", {
         type: c.mp(3), 
         amp: amp,
-        right: c.mp(2)
-        }).c(visuals(c).timeslice(t)),
+        left: c.mp(2),
+        right: c.mp(2),
+        channelname: c.sp(channames),
+        seed: seed,
+        }),
+    sparsenoisec: (t, g) => c.chan0(c.chop("noise", {
+            seed: c.fp(new Date().getMilliseconds()),
+            t: c.xyzp(t, c.fp(0), c.fp(0)) ,
+        })
+        .c(c.cc((inputs) => c.chop("math", { gain: g }).run(inputs)))
+        .c(c.chop("function", { func: c.mp(1),}))
+        .c(c.chop("speed"))),
+    noisects: (t, amp, channames, seed = c.fp(0)) => 
+        visuals(c).noisec(t, amp, channames, seed)
+            .c(visuals(c).timeslice(t)),
     lines: (spacing, width) => visuals(c).frag("lines.frag", {"i_spacing": c.x4p(spacing), "i_width": c.x4p(width)}),
     shapes: (sides, size, width) => visuals(c).frag("shapes.frag", {"i_size": c.x4p(size), "i_width": c.x4p(width), "i_sides": c.x4p(sides)}),
     stringtheory: (time, angle, angle_delta, xoffset) =>
@@ -194,10 +206,10 @@ const visuals = (c) => ({
     addops: (nodes) => c.top("composite", { "operand":c.mp(0)}).run(nodes.map((n) => n.runT())),
     multops: (nodes) => c.top("composite", { "operand":c.mp(27)}).run(nodes.map((n) => n.runT())),
     overops: (nodes) => c.top("composite", { "operand":c.mp(31)}).run(nodes.map((n) => n.runT())),
-    fadeops: (idx, ops) => c.top("switch", { "blend": c.tp(true), "index": bounce(idx, 0.4)}).run(ops.map(o => o.runT())),
+    fadeops: (idx, ops) => c.top("switch", { "blend": c.tp(true), "index": visuals(c).bounce(idx, 0.4)}).run(ops.map(o => o.runT())),
     bounce: (fp, i) => c.absp(c.subp(c.modp(fp, c.fp(i * 2)), c.fp(1))),
 
-    fadeops: (idx, ops) => c.top("switch", { "blend": c.tp(true), "index": bounce(idx, 0.4)}).run(ops.map(o => o.runT())),
+    fadeops: (idx, ops) => c.top("switch", { "blend": c.tp(true), "index": visuals(c).bounce(idx, 0.4)}).run(ops.map(o => o.runT())),
 
     triggercount: (l, f) => f.connect(c.chop("count", {
         "threshold": c.tp(true),
@@ -230,9 +242,9 @@ const visuals = (c) => ({
     geo: (params) => c.comp("geometry", Object.assign({externaltox: c.sp("toxes/Visuals/geo.tox")}, params)),
     tox: (tox, params) => c.comp("base", Object.assign({externaltox: c.sp(tox)}, params)),
     render: (g, cam, light) => c.top("render", {
-        "lights": light === undefined ? c.compp([c.compe("light")]) : c.compp(light),
-        "geometry": c.compp(g),
-        "camera": cam === undefined ? c.compp([c.compe("camera")]) : c.compp(cam),
+        lights: light === undefined ? c.compp([c.compe("light")]) : c.compp(light),
+        geometry: c.compp(g),
+        camera: cam === undefined ? c.compp([c.compe("camera")]) : c.compp(cam),
         resolutionw: c.ip(1920),
         resolutionh: c.ip(1080)
     }),
@@ -416,7 +428,7 @@ const visuals = (c) => ({
                 envlightmap: c.topp([lightmap.runT()]),
                 envlightmapprefilter: c.mp(0)
             })]
-        ).c(c.top("ssao"));
+        )
     },
     torusGeo: (sop, lightmap) => {
         let s = c.chop("wave", {

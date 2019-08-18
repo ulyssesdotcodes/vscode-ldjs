@@ -13,9 +13,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
 const ldjs = require("lambda-designer-js");
 const net = require("net");
-const path = require("path");
-const Either_1 = require("fp-ts/lib/Either");
 const parsedops = require("./parsedjs.json");
+const fp_ts_1 = require("fp-ts");
+const pipeable_1 = require("fp-ts/lib/pipeable");
 let config = vscode.workspace.getConfiguration('ldjs');
 let replcache = [];
 function debounce(func, wait, immediate) {
@@ -73,48 +73,44 @@ class LDJSBridge {
     constructor(fileUri) {
         this._outputChannel = vscode.window.createOutputChannel("ldjs");
         this.socket = new Socket();
+        this.run = (obj) => {
+            let replaced = obj.replace(/\n/g, "\\n").replace(/"/g, "\\\'");
+            obj = obj.replace("CommandCode", '`""' + replaced + '""`');
+            return Function("c", "v", "require", "return Promise.resolve((function() { " + obj + " })()).then(v)")(ldjs, (ns) => pipeable_1.pipe(ns, ldjs.validateNodes, fp_ts_1.either.map(n => ldjs.nodesToJSON(ns))), (v) => {
+                let docuri = vscode.window.activeTextEditor.document.uri.path;
+                let path = docuri.substr(0, docuri.lastIndexOf('/') + 1) + v;
+                if (replcache.indexOf(path) == -1) {
+                    replcache.push(path);
+                }
+                return require(path);
+            });
+        };
         this.socket.makeConnection();
         this.fileUri = fileUri;
         this._outputChannel.show();
     }
     update() {
-        if (vscode.window.activeTextEditor.document.uri.fsPath !== this.fileUri.fsPath) {
-            return;
-        }
-        let text = vscode.window.activeTextEditor.document.getText();
-        if (text != this.lastText) {
-            this.lastText = text;
-            this._outputChannel.clear();
-            this.runForStatus(text).slice(0, 8).map(l => this._outputChannel.appendLine(l));
-        }
-    }
-    run(obj) {
-        let replaced = obj.replace(/\n/g, "\\n").replace(/"/g, "\\\'");
-        obj = obj.replace("CommandCode", '`""' + replaced + '""`');
-        return Function("return (function(c, v, require) { return v((function() { " + obj + " })())})")()(ldjs, (ns) => ldjs.validateNodes(ns).map(n => ldjs.nodesToJSON(ns)), (v) => {
-            let docuri = vscode.window.activeTextEditor.document.uri.fsPath;
-            let lastIndex = docuri.lastIndexOf('/');
-            lastIndex = lastIndex == -1 ? docuri.lastIndexOf('\\') : lastIndex;
-            let docpath = path.normalize(docuri.substr(0, lastIndex + 1) + v);
-            if (replcache.indexOf(docpath) == -1) {
-                replcache.push(docpath);
+        return __awaiter(this, void 0, void 0, function* () {
+            if (vscode.window.activeTextEditor.document.uri.fsPath !== this.fileUri.fsPath) {
+                return;
             }
-            return require(docpath);
+            let text = vscode.window.activeTextEditor.document.getText();
+            if (text != this.lastText) {
+                this.lastText = text;
+                this._outputChannel.clear();
+                let status = yield this.runForStatus(text)();
+                this._outputChannel.appendLine(status);
+            }
         });
     }
     runForStatus(text) {
-        let result = Either_1.tryCatch(() => {
-            return this.run(text);
-        }).mapLeft(e => {
-            return [e.message].concat(e.stack.split('\n'));
-        }).chain(r => r);
-        if (result.isRight()) {
-            this.socket.send(result.value);
-            return ["Correct"];
-        }
-        else {
-            return result.value;
-        }
+        return pipeable_1.pipe(fp_ts_1.taskEither.tryCatch(() => this.run(text), (e) => [e.message].concat(e.stack.split('\n')).join("\n")), fp_ts_1.task.map(fp_ts_1.either.flatten), fp_ts_1.taskEither.chain(r => fp_ts_1.taskEither.tryCatch(() => Promise.resolve(this.socket.send(r)), e => "Problem sending")), fp_ts_1.taskEither.fold(e => fp_ts_1.task.of(e), () => fp_ts_1.task.of("Correct")));
+        // if(result.isRight()) {
+        //     this.socket.send(result.value);
+        //     return ["Correct"];
+        // } else {
+        //     return result.value;
+        // }
     }
     dispose() {
         this.socket.dispose();
