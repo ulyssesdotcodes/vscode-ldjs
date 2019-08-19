@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import * as ldjs from 'lambda-designer-js';
 import * as net from 'net';
 import * as parsedops from './parsedjs.json'
+import * as path from 'path';
 import { taskEither, either, task } from 'fp-ts'
 import { pipe } from 'fp-ts/lib/pipeable';
 
@@ -101,12 +102,13 @@ class LDJSBridge {
                 ldjs.validateNodes,
                 either.map(n => ldjs.nodesToJSON(ns))),
             (v) => {
-                let docuri = vscode.window.activeTextEditor.document.uri.path
-                let path = docuri.substr(0, docuri.lastIndexOf('/') + 1) + v
-                if(replcache.indexOf(path) == -1) {
-                    replcache.push(path);
+                let docuri = vscode.window.activeTextEditor.document.uri.fsPath
+                let pathp = path.join(path.dirname(docuri), v)
+                pathp = path.normalize(pathp)
+                if(replcache.indexOf(pathp) == -1) {
+                    replcache.push(pathp);
                 }
-                return require(path);
+                return require(pathp);
             })
     }
 

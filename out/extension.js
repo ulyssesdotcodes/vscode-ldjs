@@ -14,6 +14,7 @@ const vscode = require("vscode");
 const ldjs = require("lambda-designer-js");
 const net = require("net");
 const parsedops = require("./parsedjs.json");
+const path = require("path");
 const fp_ts_1 = require("fp-ts");
 const pipeable_1 = require("fp-ts/lib/pipeable");
 let config = vscode.workspace.getConfiguration('ldjs');
@@ -78,12 +79,13 @@ class LDJSBridge {
             let replaced = obj.replace(/\n/g, "\\n").replace(/"/g, "\\\'");
             obj = obj.replace("CommandCode", '`""' + replaced + '""`');
             return Function("c", "v", "require", "return Promise.resolve((function() { " + obj + " })()).then(v)")(ldjs, (ns) => pipeable_1.pipe(ns, ldjs.validateNodes, fp_ts_1.either.map(n => ldjs.nodesToJSON(ns))), (v) => {
-                let docuri = vscode.window.activeTextEditor.document.uri.path;
-                let path = docuri.substr(0, docuri.lastIndexOf('/') + 1) + v;
-                if (replcache.indexOf(path) == -1) {
-                    replcache.push(path);
+                let docuri = vscode.window.activeTextEditor.document.uri.fsPath;
+                let pathp = path.join(path.dirname(docuri), v);
+                pathp = path.normalize(pathp);
+                if (replcache.indexOf(pathp) == -1) {
+                    replcache.push(pathp);
                 }
-                return require(path);
+                return require(pathp);
             });
         };
         this.fileUri = fileUri;
