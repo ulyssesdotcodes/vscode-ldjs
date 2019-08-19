@@ -48,16 +48,17 @@ class Socket {
 	}
 
 	closeHandler() {
-		this.connected = false;
-		setTimeout(this.makeConnection.bind(this), this.timeout);
+        this.connected = false;
+        this.timeoutHandler();
 	}
 
 	timeoutHandler() {
+        return 
 		setTimeout(this.makeConnection.bind(this), this.timeout);
-	}
+    }
 
 	makeConnection() {
-		this.socket.connect(config.get<number>('server_port'), config.get<string>('server_url'));
+		return new Promise((resolve, reject) => this.socket.connect(config.get<number>('server_port'), config.get<string>('server_url'), resolve));
 	}
 
 	send(message: string) {
@@ -74,24 +75,20 @@ class Socket {
 class LDJSBridge {
     private _outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("ldjs")
     private socket = new Socket();
-    private lastText;
     private fileUri;
 
     public constructor(fileUri){
-        this.socket.makeConnection();
         this.fileUri = fileUri
         this._outputChannel.show();
     }
 
     public async update(){
-        if(vscode.window.activeTextEditor.document.uri.fsPath !== this.fileUri.fsPath) { return; }
         let text = vscode.window.activeTextEditor.document.getText();
-        if(text != this.lastText) {
-            this.lastText = text;
-            this._outputChannel.clear()
-            let status = await this.runForStatus(text)()
-            this._outputChannel.appendLine(status)
-        }
+        this._outputChannel.clear();
+        (this.socket.connected ? Promise.resolve() : this.socket.makeConnection())
+            .then(() => this.runForStatus(text)())
+            .then(this._outputChannel.appendLine)
+            .catch(e => this._outputChannel.appendLine([e.message].concat(e.stack.split('\n')).join("\n")))
     }
 
     run: (obj: string) => Promise<either.Either<string, string>> = (obj) => {

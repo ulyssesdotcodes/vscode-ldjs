@@ -52,13 +52,14 @@ class Socket {
     }
     closeHandler() {
         this.connected = false;
-        setTimeout(this.makeConnection.bind(this), this.timeout);
+        this.timeoutHandler();
     }
     timeoutHandler() {
+        return;
         setTimeout(this.makeConnection.bind(this), this.timeout);
     }
     makeConnection() {
-        this.socket.connect(config.get('server_port'), config.get('server_url'));
+        return new Promise((resolve, reject) => this.socket.connect(config.get('server_port'), config.get('server_url'), resolve));
     }
     send(message) {
         if (this.connected) {
@@ -85,22 +86,17 @@ class LDJSBridge {
                 return require(path);
             });
         };
-        this.socket.makeConnection();
         this.fileUri = fileUri;
         this._outputChannel.show();
     }
     update() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (vscode.window.activeTextEditor.document.uri.fsPath !== this.fileUri.fsPath) {
-                return;
-            }
             let text = vscode.window.activeTextEditor.document.getText();
-            if (text != this.lastText) {
-                this.lastText = text;
-                this._outputChannel.clear();
-                let status = yield this.runForStatus(text)();
-                this._outputChannel.appendLine(status);
-            }
+            this._outputChannel.clear();
+            (this.socket.connected ? Promise.resolve() : this.socket.makeConnection())
+                .then(() => this.runForStatus(text)())
+                .then(this._outputChannel.appendLine)
+                .catch(e => this._outputChannel.appendLine([e.message].concat(e.stack.split('\n')).join("\n")));
         });
     }
     runForStatus(text) {
