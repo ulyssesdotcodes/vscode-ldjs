@@ -18,7 +18,10 @@ def apply(newState):
   ddiff = diff(prevState, state)
   diffs.append(ddiff)
 
-  for diffi in list(reversed(list(ddiff))):
+  unwrapped = list(reversed(list(ddiff)))
+  op('changes').text = str(unwrapped)
+
+  for diffi in unwrapped:
     splits = diffi[1].split('.') if isinstance(diffi[1], str) else diffi[1]
     if diffi[1] == '':
       if diffi[0] == 'add':
@@ -63,7 +66,7 @@ def apply(newState):
             print("def: " + str(par.default))
             par.val = par.default
 
-    elif splits[1] == 'text':
+    elif splits[1] == 'text' and splits[1] != 'Changes':
       op(getName(splits[0])).text = diffi[2][1]
 
   for name in state:
@@ -102,7 +105,7 @@ def addAll(state):
 def addChange(key, value):
   addr = getName(key)
 
-  newOp = createOp(addr, value['ty'])
+  newOp = createOp(addr, value)
   print("Adding op " + value['ty'])
 
   if 'parameters' in value:
@@ -120,14 +123,15 @@ def addChange(key, value):
   #   for comm in coms:
   #     runCommand(addr, comm['command'], comm['args'])
 
-  if 'text' in value and value['text'] != None:
+  if 'text' in value and value['text'] != None and value['text'] != 'Changes':
     newOp.text = value['text']
 
   if 'connections' in value:
     return ((c, addr, i) for i,c in enumerate(value['connections']))
 
 
-def createOp(addr, ty):
+def createOp(addr, value):
+  ty = value['ty']
   clazz = getClass(ty, 'none')
   if clazz == "none":
     print("Couldn't find " + ty)
@@ -139,8 +143,17 @@ def createOp(addr, ty):
   if op(addr) != None:
     op(addr).destroy()
 
+  if clazz[1] == 'text' and clazz[2] == "DAT" and 'text' in value and value['text'] == "Changes":
+    changesOp = op(par).create(selectDAT, name)
+    changesOp.pars('dat')[0].val = '/project1/changes'
+    return changesOp
+
   # Special case things that can't have duplicates
-  if clazz[1] == 'audiodevicein' or clazz[1] == 'videodevicein' or clazz[1] == 'ndiin' or clazz[1] == 'leapmotion' or clazz[1] == 'cplusplus':
+  if clazz[1] == 'audiodevicein' or \
+     clazz[1] == 'videodevicein' or \
+     clazz[1] == 'ndiin' or \
+     clazz[1] == 'leapmotion' or \
+     clazz[1] == 'cplusplus':
     if op(clazz[1]) == None:
       parent().create(clazz[0], clazz[1])
     if clazz[2] == "CHOP":

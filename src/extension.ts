@@ -74,21 +74,22 @@ class Socket {
 }
 
 class LDJSBridge {
-    private _outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("ldjs")
+    private _outputChannel: vscode.OutputChannel;
     private socket = new Socket();
     private fileUri;
 
     public constructor(fileUri){
+        this._outputChannel = vscode.window.createOutputChannel("ldjs")
         this.fileUri = fileUri
         this._outputChannel.show();
     }
 
     public async update(){
+        console.log(this._outputChannel);
         let text = vscode.window.activeTextEditor.document.getText();
-        this._outputChannel.clear();
         (this.socket.connected ? Promise.resolve() : this.socket.makeConnection())
             .then(() => this.runForStatus(text)())
-            .then(this._outputChannel.appendLine)
+            .then(l => this._outputChannel.appendLine(l))
             .catch(e => this._outputChannel.appendLine([e.message].concat(e.stack.split('\n')).join("\n")))
     }
 

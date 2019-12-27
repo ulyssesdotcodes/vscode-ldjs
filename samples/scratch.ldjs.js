@@ -72,10 +72,19 @@ let vc = visuals(c)
 // })
 
 
-
-n = vc.lines(c.fp(0.1), c.fp(0.1))
+// n = vc.lines(c.fp(0.1), c.fp(0.1))
     // .c(vc.palettecycle(vc.buddhist, c.fp(0.5)))
     // // .c(vc.fade(c.fp(0.9)))
     // .c(vc.edgesc(c.fp(1)))
+const textdat = text => c.dat("text", {}, [], null, text);
+changes = textdat("Changes")
+changesTOP = c.top("text", { dat: c.datp(changes), wordwrap: c.tp(true), fontautosize: c.mp(1), text: c.sp("") })
+
+n = vc.multops([
+    changesTOP,
+    c.top("rectangle")
+])
+
+//n = c.top("rectangle")
 
 return [n.connect(c.top("out")).out()]
