@@ -19,7 +19,7 @@ def apply(newState):
   diffs.append(ddiff)
 
   unwrapped = list(reversed(list(ddiff)))
-  op('changes').text = str(unwrapped)
+  # op('changes').text = str(unwrapped)
 
   for diffi in unwrapped:
     splits = diffi[1].split('.') if isinstance(diffi[1], str) else diffi[1]
@@ -66,7 +66,7 @@ def apply(newState):
             print("def: " + str(par.default))
             par.val = par.default
 
-    elif splits[1] == 'text' and splits[1] != 'Changes':
+    elif splits[1] == 'text':# and splits[1] != 'Changes':
       op(getName(splits[0])).text = diffi[2][1]
 
   for name in state:
@@ -123,7 +123,7 @@ def addChange(key, value):
   #   for comm in coms:
   #     runCommand(addr, comm['command'], comm['args'])
 
-  if 'text' in value and value['text'] != None and value['text'] != 'Changes':
+  if 'text' in value and value['text'] != None: # and value['text'] != 'Changes':
     newOp.text = value['text']
 
   if 'connections' in value:
@@ -143,10 +143,10 @@ def createOp(addr, value):
   if op(addr) != None:
     op(addr).destroy()
 
-  if clazz[1] == 'text' and clazz[2] == "DAT" and 'text' in value and value['text'] == "Changes":
-    changesOp = op(par).create(selectDAT, name)
-    changesOp.pars('dat')[0].val = '/project1/changes'
-    return changesOp
+  # if clazz[1] == 'text' and clazz[2] == "DAT" and 'text' in value and value['text'] == "Changes":
+  #   changesOp = op(par).create(selectDAT, name)
+  #   changesOp.pars('dat')[0].val = '/project1/changes'
+  #   return changesOp
 
   # Special case things that can't have duplicates
   if clazz[1] == 'audiodevicein' or \

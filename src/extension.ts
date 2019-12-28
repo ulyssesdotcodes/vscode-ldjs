@@ -78,7 +78,7 @@ class LDJSBridge {
     private _outputChannel: vscode.OutputChannel;
     private socket = new Socket();
     private fileUri;
-    private previousText;
+    private previousText = "";
 
     public constructor(fileUri){
         this._outputChannel = vscode.window.createOutputChannel("ldjs")
@@ -87,17 +87,24 @@ class LDJSBridge {
     }
 
     public async update(){
-        console.log(this._outputChannel);
         let text = vscode.window.activeTextEditor.document.getText();
-        let textDiff = diff.diffLines(text, this.previousText);
-        text.replace("Changes", JSON.stringify(textDiff))
+        let textDiff = diff.diffLines(this.previousText, text);
+        this.previousText = text;
+
+        textDiff = textDiff
+            .filter(d => d.removed || d.added)
+            .flatMap(d => d.value.split('\n').map(v => ({...d, value: v})))
+            .map(d => (d.removed ? "removed" : d.added ? "added" : "unknown") + "\t" + d.value)
+            .map(d => d.replace(/`/g, "\\`")).join("\\n");
+
+        text = text.replace("Changes", textDiff)
+        console.log(text)
         this._outputChannel.clear();
         (this.socket.connected ? Promise.resolve() : this.socket.makeConnection())
             .then(() => this.runForStatus(text)())
             .then(l => this._outputChannel.appendLine(l))
             .catch(e => this._outputChannel.appendLine([e.message].concat(e.stack.split('\n')).join("\n")))
 
-        this.previousText = text;
     }
 
     run: (obj: string) => Promise<either.Either<string, string>> = (obj) => {

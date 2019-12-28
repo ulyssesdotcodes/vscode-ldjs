@@ -71,9 +71,13 @@ let vc = visuals(c)
 //     extend: c.mp(2),
 // })
 
-let commandcode = c.top("text", {text: c.sp("Changes"), dispmethod: c.mp(3),  fontautosize: c.mp(1), wordwrap: c.mp(1)})
+let changes = c.dat("table", {}, [], null, `Changes`)
+let removed = changes.c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("removed"), extractcols: c.mp(2), colindexstart: c.ip(1)}));
+let added = changes.c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("added"), extractcols: c.mp(2), colindexstart: c.ip(1)}));
+let commandcode = c.top("text", {dat: c.datp(added), text: c.sp(""), dispmethod: c.mp(3),  fontautosize: c.mp(1), wordwrap: c.tp(true)})
 
 let test = c.top("rectangle")
+
     
 // commandcode = c.top("rectangle")
 

@@ -16,6 +16,7 @@ const ldjs = require("lambda-designer-js");
 const net = require("net");
 const parsedops = require("./parsedjs.json");
 const path = require("path");
+const diff = require("diff");
 const fp_ts_1 = require("fp-ts");
 const pipeable_1 = require("fp-ts/lib/pipeable");
 let config = vscode.workspace.getConfiguration('ldjs');
@@ -75,6 +76,7 @@ class Socket {
 class LDJSBridge {
     constructor(fileUri) {
         this.socket = new Socket();
+        this.previousText = "";
         this.run = (obj) => {
             let replaced = obj.replace(/\n/g, "\\n").replace(/"/g, "\\\'");
             obj = obj.replace("CommandCode", '`""' + replaced + '""`');
@@ -94,8 +96,17 @@ class LDJSBridge {
     }
     update() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log(this._outputChannel);
             let text = vscode.window.activeTextEditor.document.getText();
+            let textDiff = diff.diffLines(this.previousText, text);
+            this.previousText = text;
+            textDiff = textDiff
+                .filter(d => d.removed || d.added)
+                .flatMap(d => d.value.split('\n').map(v => (Object.assign(Object.assign({}, d), { value: v }))))
+                .map(d => (d.removed ? "removed" : d.added ? "added" : "unknown") + "\t" + d.value)
+                .map(d => d.replace(/`/g, "\\`")).join("\\n");
+            text = text.replace("Changes", textDiff);
+            console.log(text);
+            this._outputChannel.clear();
             (this.socket.connected ? Promise.resolve() : this.socket.makeConnection())
                 .then(() => this.runForStatus(text)())
                 .then(l => this._outputChannel.appendLine(l))
