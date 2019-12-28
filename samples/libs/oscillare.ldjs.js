@@ -119,6 +119,7 @@ const visuals = (c) => ({
         "alignx": c.mp(0),
         "aligny": c.mp(0),
         "text": c.sp(text),
+        "dispmethod": c.mp(3),
         "fontautosize": c.mp(1)
     }),
     flowermod: (s) => visuals(c).frag("flower_mod.frag", {"uSeconds": c.x4p(s)}),

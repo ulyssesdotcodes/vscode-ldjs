@@ -78,11 +78,12 @@
     },
     "devDependencies": {
         "@types/mocha": "^2.2.42",
-        "@types/node": "^8.10.51",
-        "typescript": "^3.5.3",
+        "@types/node": "^8.10.59",
+        "typescript": "^3.7.4",
         "vscode": "^1.1.36"
     },
     "dependencies": {
+        "diff": "^4.0.1",
         "fp-ts": "2.0.5",
         "lambda-designer-js": "1.0.19",
         "net": "^1.0.2"

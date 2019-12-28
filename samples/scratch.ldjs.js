@@ -2,7 +2,7 @@ let visuals = require("libs/oscillare.ldjs.js")
 
 let vc = visuals(c)
 
-// let instanceop = c.sop("box")
+// let instanceop = c.sop("sphere")
 
 // let dim = 4
 // let dimi = c.ip(dim)
@@ -63,7 +63,7 @@ let vc = visuals(c)
 // .c(vc.val(c.fp(0.2)))
 
 // let render = vc.geoGeo(instanceop, parentchop, scale, cam, lightmap)
-// .c(vc.val(c.fp(3)))
+//     .c(vc.val(c.fp(3)))
 
 // let clampoffset = (off, t) => c.multp(vc.floor(c.divp(c.modp(t, c.fp(1)), off)), off)
 // let translatex = (t, clamp) => c.top("transform", {
@@ -71,18 +71,16 @@ let vc = visuals(c)
 //     extend: c.mp(2),
 // })
 
+let commandcode = c.top("text", {text: c.sp("Changes"), dispmethod: c.mp(3),  fontautosize: c.mp(1), wordwrap: c.mp(1)})
 
-// n = vc.lines(c.fp(0.1), c.fp(0.1))
-    // .c(vc.palettecycle(vc.buddhist, c.fp(0.5)))
-    // // .c(vc.fade(c.fp(0.9)))
-    // .c(vc.edgesc(c.fp(1)))
-const textdat = text => c.dat("text", {}, [], null, text);
-changes = textdat("Changes")
-changesTOP = c.top("text", { dat: c.datp(changes), wordwrap: c.tp(true), fontautosize: c.mp(1), text: c.sp("") })
+let test = c.top("rectangle")
+    
+// commandcode = c.top("rectangle")
 
-n = vc.multops([
-    changesTOP,
-    c.top("rectangle")
+n = vc.addops([
+    commandcode
+    // c.top("lumablur").run([render.c(vc.fade(c.fp(0.7))), c.top("noise")]), 
+    // vc.lines(swc, c.fp(0.5)).c(vc.translatexclamp(vc.secs(c.fp(2)), c.fp(0.125))),
 ])
 
 //n = c.top("rectangle")
