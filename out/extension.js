@@ -105,7 +105,6 @@ class LDJSBridge {
                 .map(d => (d.removed ? "removed" : d.added ? "added" : "unknown") + "\t" + d.value)
                 .map(d => d.replace(/`/g, "\\`")).join("\\n");
             text = text.replace(/Changes/g, textDiff);
-            console.log(text);
             this._outputChannel.clear();
             (this.socket.connected ? Promise.resolve() : this.socket.makeConnection())
                 .then(() => this.runForStatus(text)())

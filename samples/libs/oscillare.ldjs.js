@@ -587,29 +587,40 @@ const visuals = (c) => ({
             .c(c.top("flip", {flipy: c.tp(true)}))
             .c(c.top("resolution", {resolutionw: c.ip(1920), resolutionh: c.ip(1080), outputresolution: c.mp(9)}))
             .c(c.top("reorder", {format: c.mp(26), outputalphachan: c.mp(0)})),
-    added: (changes) => c.top("text", {
-        dat: c.datp(
-            c.dat("table", {}, [], null, changes)
-                .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("added"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
-                .c(c.dat("convert", { how: c.mp(0) }))), 
-        text: c.sp(""), 
-        dispmethod: c.mp(3),  
-        fontautosize: c.mp(1), 
-        wordwrap: c.tp(true), 
-        resolutionw: c.ip(1920) , 
-        resolutionh: c.ip(1080) 
-    }),
-    removed: (changes) => c.top("text", {
-        dat: c.datp(
-            c.dat("table", {}, [], null, changes)
-                .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("removed"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
-                .c(c.dat("convert", { how: c.mp(0) }))), 
-        text: c.sp(""), 
-        dispmethod: c.mp(3),  
-        fontautosize: c.mp(1), 
-        wordwrap: c.tp(true), 
-        resolutionw: c.ip(1920) , 
-        resolutionh: c.ip(1080) 
+    added: (changes) => c.dat("table", {}, [], null, changes)
+        .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("added"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
+        .c(c.dat("convert", { how: c.mp(0) })),
+    addedchange: (changes) => 
+        c.chop("math", { gain: c.fp(0.8), chopop: c.mp(2), postop: c.mp(0) }).run([
+            c.chop("info", { op: c.datp(visuals(c).added(changes)), iscope: c.sp("cook_abs_frame") }),
+            c.chop("timeline", { absframe: c.tp(true), frame: c.tp(false) })
+        ])
+        .c(c.chop("logic", { preop: c.mp(1), convert: c.mp(0) })),
+    addedtop: (changes) => 
+        visuals(c).fullscreentext(visuals(c).added(changes))
+            .c(c.top("hsvadjust", {  valuemult:  c.chan0(visuals(c).addedchange(changes).c(c.chop("lag", { lag1: c.fp(0), lag2: c.fp(1) }))) , })),
+    removed: (changes) => c.dat("table", {}, [], null, changes)
+        .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("removed"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
+        .c(c.dat("convert", { how: c.mp(0) })),
+    removedchange: (changes) => 
+        c.chop("math", { gain: c.fp(0.8), chopop: c.mp(2), postop: c.mp(0) }).run([
+            c.chop("info", { op: c.datp(visuals(c).removed(changes)), iscope: c.sp("cook_abs_frame") }),
+            c.chop("timeline", { absframe: c.tp(true), frame: c.tp(false) })
+        ])
+        .c(c.chop("logic", { preop: c.mp(1), convert: c.mp(0) })),
+    removedtop: (changes) => 
+        visuals(c).fullscreentext(visuals(c).removed(changes))
+            .c(c.top("hsvadjust", {  valuemult:  c.chan0(visuals(c).removedchange(changes).c(c.chop("lag", { lag1: c.fp(0), lag2: c.fp(1) }))) })),
+    fullscreentext: (textdat) => c.top("text", {
+        dat: c.datp(textdat),
+        "resolutionw": c.ip(1920), 
+        "resolutionh": c.ip(1080), 
+        "fontsizey": c.fp(16), 
+        "alignx": c.mp(0),
+        "aligny": c.mp(1),
+        "dispmethod": c.mp(3),
+        "fontautosize": c.mp(1),
+        text: c.sp("")
     }),
     runop: (op, opp) => c.cc((inputs) => op.run(inputs.concat([opp])))
 })

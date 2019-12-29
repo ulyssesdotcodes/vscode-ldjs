@@ -71,23 +71,6 @@ let vc = visuals(c)
 //     extend: c.mp(2),
 // })
 
-let changes = c.dat("table", {}, [], null, `Changes`)
-let removed = 
-    changes.c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("removed"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
-        .c(c.dat("convert", { how: c.mp(0) }))
-let added = 
-    changes.c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("added"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
-        .c(c.dat("convert", { how: c.mp(0) }))
-
-let removedtop = vc.multops([
-    c.top("constant", { color: c.rgbp(c.fp(1), c.fp(0), c.fp(0)) }),
-    vc.removed(`Changes`)
-]).c(vc.translatey(c.fp(-0.3)))
-
-let addedtop = vc.multops([
-    c.top("constant", { color: c.rgbp(c.fp(0), c.fp(1), c.fp(0)) }),
-    vc.added(`Changes`)
-]).c(vc.translatey(c.fp(0.3)))
 
 let test = c.top("rectangle")  
     .c(c.top("edge"))
@@ -95,8 +78,8 @@ let test = c.top("rectangle")
 // commandcode = c.top("rectangle")
 
 n = vc.addops([
-    removedtop,
-    addedtop
+    vc.addedtop(`Changes`).c(vc.translatey(c.fp(0.3))),
+    vc.removedtop(`Changes`).c(vc.translatey(c.fp(-0.3))),
     // c.top("lumablur").run([render.c(vc.fade(c.fp(0.7))), c.top("noise")]), 
     // vc.lines(swc, c.fp(0.5)).c(vc.translatexclamp(vc.secs(c.fp(2)), c.fp(0.125))),
 ])
