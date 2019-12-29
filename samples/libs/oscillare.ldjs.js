@@ -129,6 +129,7 @@ const visuals = (c) => ({
     transform: (extra) => c.top("transform", extra),
     rotate: (r) => visuals(c).transform({"rotate": r}),
     translate: (x, y) => visuals(c).transform({"t": c.xyp(x, y), "extend": c.mp(3)}),
+    translatee: (x, y, e) => visuals(c).transform({"t": c.xyp(x, y), "extend": c.mp(e)}),
     translatex: (x) => visuals(c).translate(x, c.fp(0)),
     translatexclamp: (t, clamp) => c.top("transform", {
         t: c.xyp(c.multp(visuals(c).floor(c.divp(c.modp(t, c.fp(1)), clamp)), clamp), c.fp(0)),
@@ -598,7 +599,14 @@ const visuals = (c) => ({
         .c(c.chop("logic", { preop: c.mp(1), convert: c.mp(0) })),
     addedtop: (changes) => 
         visuals(c).fullscreentext(visuals(c).added(changes))
-            .c(c.top("hsvadjust", {  valuemult:  c.chan0(visuals(c).addedchange(changes).c(c.chop("lag", { lag1: c.fp(0), lag2: c.fp(1) }))) , })),
+            .c(c.top("level", {  opacity:  c.chan0(visuals(c).addedchange(changes).c(c.chop("trigger", { 
+                attack: c.fp(0),
+                peak: c.fp(1),
+                sustain: c.fp(1),
+                minsustain: c.fp(1),
+                release: c.fp(1)
+             })))}))
+            .c(visuals(c).translatee(c.fp(0.04), c.fp(-0.1), 1)),
     removed: (changes) => c.dat("table", {}, [], null, changes)
         .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("removed"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
         .c(c.dat("convert", { how: c.mp(0) })),
@@ -610,17 +618,27 @@ const visuals = (c) => ({
         .c(c.chop("logic", { preop: c.mp(1), convert: c.mp(0) })),
     removedtop: (changes) => 
         visuals(c).fullscreentext(visuals(c).removed(changes))
-            .c(c.top("hsvadjust", {  valuemult:  c.chan0(visuals(c).removedchange(changes).c(c.chop("lag", { lag1: c.fp(0), lag2: c.fp(1) }))) })),
+            .c(c.top("level", {  opacity:  c.chan0(visuals(c).addedchange(changes).c(c.chop("trigger", { 
+                attack: c.fp(0),
+                peak: c.fp(1),
+                sustain: c.fp(1),
+                minsustain: c.fp(1),
+                release: c.fp(1)
+             })))}))
+            .c(visuals(c).translatee(c.fp(0.04), c.fp(-0.1), 1)),
     fullscreentext: (textdat) => c.top("text", {
         dat: c.datp(textdat),
         "resolutionw": c.ip(1920), 
         "resolutionh": c.ip(1080), 
         "fontsizey": c.fp(16), 
         "alignx": c.mp(0),
-        "aligny": c.mp(1),
+        "aligny": c.mp(2),
         "dispmethod": c.mp(3),
         "fontautosize": c.mp(1),
-        text: c.sp("")
+        fontsizex: c.fp(16),
+        text: c.sp(""),
+        fontfile: c.sp("AnonymousPro-Regular.ttf") ,
+        linespacing: c.fp(12) ,
     }),
     runop: (op, opp) => c.cc((inputs) => op.run(inputs.concat([opp])))
 })

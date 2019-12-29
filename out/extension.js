@@ -101,7 +101,7 @@ class LDJSBridge {
             this.previousText = text;
             textDiff = textDiff
                 .filter(d => d.removed || d.added)
-                .flatMap(d => d.value.split('\n').filter(l => /\S/.test(l)).map(v => (Object.assign(Object.assign({}, d), { value: v }))))
+                .flatMap(d => d.value.split('\n').filter(l => /\S/.test(l)).filter(l => !l.startsWith("//")).map(v => (Object.assign(Object.assign({}, d), { value: v }))))
                 .map(d => (d.removed ? "removed" : d.added ? "added" : "unknown") + "\t" + d.value)
                 .map(d => d.replace(/`/g, "\\`")).join("\\n");
             text = text.replace(/Changes/g, textDiff);
