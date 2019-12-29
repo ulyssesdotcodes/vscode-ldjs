@@ -587,8 +587,32 @@ const visuals = (c) => ({
             .c(c.top("flip", {flipy: c.tp(true)}))
             .c(c.top("resolution", {resolutionw: c.ip(1920), resolutionh: c.ip(1080), outputresolution: c.mp(9)}))
             .c(c.top("reorder", {format: c.mp(26), outputalphachan: c.mp(0)})),
+    added: (changes) => c.top("text", {
+        dat: c.datp(
+            c.dat("table", {}, [], null, changes)
+                .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("added"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
+                .c(c.dat("convert", { how: c.mp(0) }))), 
+        text: c.sp(""), 
+        dispmethod: c.mp(3),  
+        fontautosize: c.mp(1), 
+        wordwrap: c.tp(true), 
+        resolutionw: c.ip(1920) , 
+        resolutionh: c.ip(1080) 
+    }),
+    removed: (changes) => c.top("text", {
+        dat: c.datp(
+            c.dat("table", {}, [], null, changes)
+                .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("removed"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
+                .c(c.dat("convert", { how: c.mp(0) }))), 
+        text: c.sp(""), 
+        dispmethod: c.mp(3),  
+        fontautosize: c.mp(1), 
+        wordwrap: c.tp(true), 
+        resolutionw: c.ip(1920) , 
+        resolutionh: c.ip(1080) 
+    }),
     runop: (op, opp) => c.cc((inputs) => op.run(inputs.concat([opp])))
-    })
+})
 
 //export const rect = (c) => c.tope("rectangle")
 module.exports = visuals

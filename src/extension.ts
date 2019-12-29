@@ -88,17 +88,18 @@ class LDJSBridge {
 
     public async update(){
         let text = vscode.window.activeTextEditor.document.getText();
-        let textDiff = diff.diffLines(this.previousText, text);
+        let textDiff = diff.diffTrimmedLines(this.previousText, text);
         this.previousText = text;
 
         textDiff = textDiff
             .filter(d => d.removed || d.added)
-            .flatMap(d => d.value.split('\n').map(v => ({...d, value: v})))
+            .flatMap(d => d.value.split('\n').filter(l => /\S/.test(l)).map(v => ({...d, value: v})))
             .map(d => (d.removed ? "removed" : d.added ? "added" : "unknown") + "\t" + d.value)
             .map(d => d.replace(/`/g, "\\`")).join("\\n");
 
-        text = text.replace("Changes", textDiff)
-        console.log(text)
+        text = text.replace(/Changes/g, textDiff)
+        console.log(text);
+
         this._outputChannel.clear();
         (this.socket.connected ? Promise.resolve() : this.socket.makeConnection())
             .then(() => this.runForStatus(text)())
