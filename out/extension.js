@@ -1,10 +1,9 @@
 'use strict';
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -101,7 +100,7 @@ class LDJSBridge {
             this.previousText = text;
             textDiff = textDiff
                 .filter(d => d.removed || d.added)
-                .flatMap(d => d.value.split('\n').filter(l => /\S/.test(l)).filter(l => !l.startsWith("//")).map(v => (Object.assign(Object.assign({}, d), { value: v }))))
+                .flatMap(d => d.value.split('\n').filter(l => /\S/.test(l)).filter(l => !l.startsWith("//")).map(v => (Object.assign({}, d, { value: v }))))
                 .map(d => (d.removed ? "removed" : d.added ? "added" : "unknown") + "\t" + d.value)
                 .map(d => d.replace(/`/g, "\\`")).join("\\n");
             text = text.replace(/Changes/g, textDiff);

@@ -72,6 +72,16 @@ const visuals = (c) => ({
             resolutionh: c.ip(1080),
             outputresolution: c.mp(9)
         }).run(inputs),
+    verticalstack: (inputs) => 
+        c.top("glslmulti", {
+            pixeldat: c.datp([
+                c.dat("text", {
+                    "file" : c.sp("scripts/verticalstack.frag")
+                })]),
+            resolutionw: { type: "number", value0: [ "max(map(lambda n: n.width, me.inputs))" ] },
+            resolutionh: { type: "number", value0: [ "sum(map(lambda n: n.height, me.inputs))" ] },
+            outputresolution: c.mp(9)
+        }).run(inputs),
     adata: (v) => visuals(c).atex(v).connect(visuals(c).frag('audio_data.frag', {'i_volume': c.x4p(c.fp(1))})),
     noiset: (t) => c.top("noise", {"t": c.xyzp(c.fp(0), c.fp(0), t)}),
     noisecc: (t, amp, channames) => c.chan(c.ip(0), visuals(c).noisec(t, amp, channames)),
@@ -589,8 +599,7 @@ const visuals = (c) => ({
             .c(c.top("resolution", {resolutionw: c.ip(1920), resolutionh: c.ip(1080), outputresolution: c.mp(9)}))
             .c(c.top("reorder", {format: c.mp(26), outputalphachan: c.mp(0)})),
     added: (changes) => c.dat("table", {}, [], null, changes)
-        .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("added"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
-        .c(c.dat("convert", { how: c.mp(0) })),
+        .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("added"), extractcols: c.mp(2), colindexstart: c.ip(1)})),
     addedchange: (changes) => 
         c.chop("math", { gain: c.fp(0.8), chopop: c.mp(2), postop: c.mp(0) }).run([
             c.chop("info", { op: c.datp(visuals(c).added(changes)), iscope: c.sp("cook_abs_frame") }),
@@ -598,18 +607,18 @@ const visuals = (c) => ({
         ])
         .c(c.chop("logic", { preop: c.mp(1), convert: c.mp(0) })),
     addedtop: (changes) => 
-        visuals(c).fullscreentext(visuals(c).added(changes))
+        visuals(c).fullscreentext(
+            visuals(c).added(changes).c(c.dat("convert", { how: c.mp(0) })), 
+            c.chan(c.sp("num_rows"), c.chop("info", { op: c.datp(visuals(c).added(changes)) })))
             .c(c.top("level", {  opacity:  c.chan0(visuals(c).addedchange(changes).c(c.chop("trigger", { 
                 attack: c.fp(0),
                 peak: c.fp(1),
                 sustain: c.fp(1),
-                minsustain: c.fp(1),
+                minsustain: c.fp(5),
                 release: c.fp(1)
-             })))}))
-            .c(visuals(c).translatee(c.fp(0.04), c.fp(-0.1), 1)),
+             })))})),
     removed: (changes) => c.dat("table", {}, [], null, changes)
-        .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("removed"), extractcols: c.mp(2), colindexstart: c.ip(1)}))
-        .c(c.dat("convert", { how: c.mp(0) })),
+        .c(c.dat("select", { extractrows: c.mp(5), rownames: c.sp("removed"), extractcols: c.mp(2), colindexstart: c.ip(1)})),
     removedchange: (changes) => 
         c.chop("math", { gain: c.fp(0.8), chopop: c.mp(2), postop: c.mp(0) }).run([
             c.chop("info", { op: c.datp(visuals(c).removed(changes)), iscope: c.sp("cook_abs_frame") }),
@@ -617,20 +626,29 @@ const visuals = (c) => ({
         ])
         .c(c.chop("logic", { preop: c.mp(1), convert: c.mp(0) })),
     removedtop: (changes) => 
-        visuals(c).fullscreentext(visuals(c).removed(changes))
+        visuals(c).fullscreentext(
+            visuals(c).removed(changes).c(c.dat("convert", { how: c.mp(0) })), 
+            c.chan(c.sp("num_rows"), c.chop("info", { op: c.datp(visuals(c).removed(changes)) }))
+            )
             .c(c.top("level", {  opacity:  c.chan0(visuals(c).addedchange(changes).c(c.chop("trigger", { 
                 attack: c.fp(0),
                 peak: c.fp(1),
                 sustain: c.fp(1),
-                minsustain: c.fp(1),
+                minsustain: c.fp(2),
                 release: c.fp(1)
-             })))}))
-            .c(visuals(c).translatee(c.fp(0.04), c.fp(-0.1), 1)),
-    fullscreentext: (textdat) => c.top("text", {
+             })))})),
+    multops: (nodes) => c.top("composite", { "operand":c.mp(27)}).run(nodes.map((n) => n.runT())),
+    changestop: (changes) => visuals(c).verticalstack([
+        visuals(c).multops([c.top("constant", { color: c.rgbp(c.fp(0), c.fp(1), c.fp(0)) }), visuals(c).addedtop(changes)]),
+        visuals(c).multops([c.top("constant", { color: c.rgbp(c.fp(1), c.fp(0), c.fp(0)) }), visuals(c).removedtop(changes)]),
+    ]).c(c.top("fit", {  resolutionw: c.ip(1920) ,  resolutionh: c.ip(1080), outputresolution: c.mp(9), outputaspect: c.mp(1),  })),
+    textdat: (text) => c.dat("text", {}, [], null, text),
+    fullscreentext: (textdat, rowcount) => c.top("text", {
         dat: c.datp(textdat),
         "resolutionw": c.ip(1920), 
-        "resolutionh": c.ip(1080), 
-        "fontsizey": c.fp(16), 
+        "resolutionh": c.multp(c.ip(36), 
+        c.casti(rowcount)), 
+        "fontsizey": c.fp(18), 
         "alignx": c.mp(0),
         "aligny": c.mp(2),
         "dispmethod": c.mp(3),
@@ -639,6 +657,7 @@ const visuals = (c) => ({
         text: c.sp(""),
         fontfile: c.sp("AnonymousPro-Regular.ttf") ,
         linespacing: c.fp(12) ,
+        bgalpha: c.fp(1)
     }),
     runop: (op, opp) => c.cc((inputs) => op.run(inputs.concat([opp])))
 })

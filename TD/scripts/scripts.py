@@ -31,7 +31,7 @@ def apply(newState):
           curop = op("/project1/lambda" + key)
           if curop != None:
             curop.destroy()
-    elif splits[1] == 'connections':
+    elif len(splits) > 1 and splits[1] == 'connections':
       concatname = [str(x) for x in diffi[1] if isinstance(x, str)]
       diffip = diffi[1] if isinstance(diffi[1], str) or diffi[1] == '' else ".".join(concatname)
       item = dot_lookup(state, diffip, parent=True)
@@ -41,7 +41,7 @@ def apply(newState):
           connector.disconnect()
       for i, conn in enumerate(item['connections']):
         op(getName(conn)).outputConnectors[0].connect(curop.inputConnectors[i])
-    elif splits[1] == 'parameters':
+    elif len(splits) > 1 and splits[1] == 'parameters':
       curop = op(getName(splits[0]))
       if diffi[0] == 'add':
         for k,v in diffi[2]:
@@ -66,7 +66,7 @@ def apply(newState):
             print("def: " + str(par.default))
             par.val = par.default
 
-    elif splits[1] == 'text':# and splits[1] != 'Changes':
+    elif len(splits) > 1 and splits[1] == 'text':# and splits[1] != 'Changes':
       op(getName(splits[0])).text = diffi[2][1]
 
   for name in state:
