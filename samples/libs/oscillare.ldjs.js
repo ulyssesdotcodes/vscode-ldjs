@@ -657,7 +657,7 @@ const visuals = (c) => ({
         text: c.sp(""),
         fontfile: c.sp("AnonymousPro-Regular.ttf") ,
         linespacing: c.fp(12) ,
-        bgalpha: c.fp(1)
+        bgalpha: c.fp(0.4)
     }),
     runop: (op, opp) => c.cc((inputs) => op.run(inputs.concat([opp])))
 })
